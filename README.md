@@ -2,7 +2,7 @@
 
 > "There are many coding agents, but this one is mine."
 
-**Current stable release: v0.58.3** (2026-03-15) — [GitHub](https://github.com/badlogic/pi-mono) · [Discord](https://discord.com/invite/3cU7Bz4UPx) · [pi.dev](https://pi.dev)
+**Current stable release: v0.58.4** (2026-03-16) — [GitHub](https://github.com/badlogic/pi-mono) · [Discord](https://discord.com/invite/3cU7Bz4UPx) · [pi.dev](https://pi.dev)
 
 Pi is a minimal, extensible, terminal-based AI coding agent and supporting library ecosystem. Built by Mario Zechner (`badlogic`), it deliberately skips features like MCP, plan mode, sub-agents, and permission popups — keeping the core under 1,000 tokens of system prompt while allowing users to build exactly what they need via TypeScript extensions.
 
@@ -26,13 +26,13 @@ Pi's design emerges from three frustrations with existing tools:
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| **[@mariozechner/pi-coding-agent](packages/coding-agent.md)** | 0.58.3 | Interactive coding agent CLI (`pi` binary) |
-| **[@mariozechner/pi-ai](packages/ai.md)** | 0.58.3 | Unified multi-provider LLM API (23+ providers) |
-| **[@mariozechner/pi-agent-core](packages/agent.md)** | 0.58.3 | Agent runtime with tool calling and state management |
-| **[@mariozechner/pi-tui](packages/tui.md)** | 0.58.3 | Terminal UI library with differential rendering |
-| **[@mariozechner/pi-web-ui](packages/web-ui.md)** | 0.58.3 | Web components for AI chat interfaces |
-| **[@mariozechner/pi-mom](packages/mom.md)** | 0.58.3 | Slack bot delegating to pi coding agent |
-| **[@mariozechner/pi-pods](packages/pods.md)** | 0.58.3 | CLI for managing vLLM deployments on GPU pods |
+| **[@mariozechner/pi-coding-agent](packages/coding-agent.md)** | 0.58.4 | Interactive coding agent CLI (`pi` binary) |
+| **[@mariozechner/pi-ai](packages/ai.md)** | 0.58.4 | Unified multi-provider LLM API (23+ providers) |
+| **[@mariozechner/pi-agent-core](packages/agent.md)** | 0.58.4 | Agent runtime with tool calling and state management |
+| **[@mariozechner/pi-tui](packages/tui.md)** | 0.58.4 | Terminal UI library with differential rendering |
+| **[@mariozechner/pi-web-ui](packages/web-ui.md)** | 0.58.4 | Web components for AI chat interfaces |
+| **[@mariozechner/pi-mom](packages/mom.md)** | 0.58.4 | Slack bot delegating to pi coding agent |
+| **[@mariozechner/pi-pods](packages/pods.md)** | 0.58.4 | CLI for managing vLLM deployments on GPU pods |
 
 ---
 

@@ -1,6 +1,6 @@
 # @mariozechner/pi-ai
 
-**Version:** 0.58.3 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
+**Version:** 0.58.4 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
 
 Unified multi-provider LLM streaming API. Provides a consistent interface over 23+ providers with automatic model discovery, token/cost tracking, streaming tool calls, and OAuth utilities.
 

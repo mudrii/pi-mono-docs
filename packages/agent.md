@@ -1,6 +1,6 @@
 # @mariozechner/pi-agent-core
 
-**Version:** 0.58.3 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
+**Version:** 0.58.4 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
 
 Stateful agent runtime with tool execution, event streaming, and message queue management. Built on top of `@mariozechner/pi-ai`.
 
@@ -250,7 +250,8 @@ type AgentEvent =
   | { type: "message_end"; message: AgentMessage }
   | { type: "tool_execution_start"; toolCallId: string; toolName: string; args: any }
   | { type: "tool_execution_update"; toolCallId: string; toolName: string; args: any; partialResult: any }
-  | { type: "tool_execution_end"; toolCallId: string; toolName: string; result: any; isError: boolean };
+  | { type: "tool_execution_end"; toolCallId: string; toolName: string; result: any; isError: boolean }
+  | { type: "state_change"; state: AgentState };   // v0.58.4: emitted by setModel() and setThinkingLevel()
 
 // Subscribe
 const unsubscribe = agent.subscribe((event) => {
@@ -271,7 +272,7 @@ unsubscribe();
 ## Steering and Follow-up
 
 ```typescript
-// Interrupt: queued after current tool completes
+// Interrupt: queued after the current tool-call batch fully completes (v0.58.4+)
 agent.steer({
   role: "user",
   content: "Stop! Focus on the authentication bug instead.",

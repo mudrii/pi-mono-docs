@@ -1,6 +1,6 @@
 # @mariozechner/pi-tui
 
-**Version:** 0.58.3 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
+**Version:** 0.58.4 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
 
 Low-level terminal UI toolkit with differential rendering, Kitty graphics protocol, IME support, and a rich component library.
 

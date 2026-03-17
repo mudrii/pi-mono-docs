@@ -4,6 +4,21 @@ All pi-mono releases follow lockstep versioning — all packages (`pi-ai`, `pi-t
 
 ---
 
+## v0.58.4 — 2026-03-16
+
+**Bug fixes:**
+- `agent` / `coding-agent`: Fixed steering messages to wait until the current assistant message's tool-call batch fully finishes instead of skipping pending tool calls.
+
+**Features:**
+- `web-ui`: Added `onModelSelect` callback on `AgentInterface` and `ChatPanel.setAgent` config
+- `web-ui`: Added `allowedProviders` filter on `ModelSelector.open()` to restrict visible models
+- `web-ui`: Added `onClose` callback on `SettingsDialog.open()`
+- `web-ui`: Added `state_change` event emitted by `Agent` on `setModel()` and `setThinkingLevel()`
+- `web-ui`: Subsequence-based fuzzy search in model selector (replaces substring matching)
+- `web-ui`: Added `openai-codex` and `github-copilot` to `shouldUseProxyForProvider`
+
+---
+
 ## v0.58.3 — 2026-03-15
 
 **Bug fixes:**

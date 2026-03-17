@@ -1,6 +1,6 @@
 # @mariozechner/pi-pods
 
-**Version:** 0.58.3 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-pods)
+**Version:** 0.58.4 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-pods)
 
 CLI tool for deploying and managing vLLM inference servers on GPU cloud pods. Automatically sets up OpenAI-compatible API endpoints on DataCrunch, RunPod, Vast.ai, and similar providers.
 

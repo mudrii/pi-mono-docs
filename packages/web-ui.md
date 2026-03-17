@@ -1,6 +1,6 @@
 # @mariozechner/pi-web-ui
 
-**Version:** 0.58.3 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-web-ui)
+**Version:** 0.58.4 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-web-ui)
 
 Web UI components for pi: chat interface, artifact panel, IndexedDB session storage, and a multi-format attachment system. Built on Lit web components.
 
@@ -561,6 +561,7 @@ clearAuthToken(): void;
 // Proxy configuration
 applyProxyIfNeeded(agent: Agent, proxyUrl?: string): void;
 createStreamFn(proxyUrl: string, authToken: string): StreamFn;
+// Returns true for: anthropic, openai, google, xai, mistral, openai-codex, github-copilot (v0.58.4+)
 shouldUseProxyForProvider(provider: string): boolean;
 
 // i18n
@@ -582,6 +583,39 @@ Light/dark theme is controlled via CSS class on the root element:
 
 ```javascript
 document.documentElement.classList.toggle("dark");
+```
+
+---
+
+## ModelSelector and SettingsDialog
+
+### ModelSelector
+
+`ModelSelector.open()` accepts an optional `allowedProviders` filter to restrict which providers are shown (v0.58.4+):
+
+```typescript
+import { ModelSelector } from "@mariozechner/pi-web-ui";
+
+// Show only specific providers
+ModelSelector.open({
+  allowedProviders: ["anthropic", "openai", "google"],
+  onSelect: (model) => agent.setModel(model)
+});
+```
+
+Model search uses **subsequence-based fuzzy matching** (v0.58.4+), replacing the previous substring matching. This means typing `"clop"` matches `"claude-opus-4-6"`.
+
+### SettingsDialog
+
+`SettingsDialog.open()` accepts an `onClose` callback (v0.58.4+):
+
+```typescript
+import { SettingsDialog } from "@mariozechner/pi-web-ui";
+
+SettingsDialog.open({
+  agent,
+  onClose: () => console.log("Settings dialog closed")
+});
 ```
 
 ---
