@@ -1,6 +1,6 @@
 # pi-ai: Unified LLM Abstraction Layer
 
-`@mariozechner/pi-ai` (v0.60.0) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 23 providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
+`@mariozechner/pi-ai` (v0.65.2) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 23 providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
 
 Only models that support tool calling (function calling) are included in the catalog, since tool use is essential for the agentic workflows that the coding-agent package builds on top of.
 
@@ -21,6 +21,8 @@ Only models that support tool calling (function calling) are included in the cat
 - [Cross-Provider Handoffs](#cross-provider-handoffs)
 - [Prompt Caching](#prompt-caching)
 - [Adding a New Provider](#adding-a-new-provider)
+- [ModelRegistry Breaking Changes](#modelregistry-breaking-changes)
+- [Faux Provider](#faux-provider)
 
 ---
 
@@ -265,8 +267,8 @@ The model catalog (`models.generated.ts`) defines 23 providers. Each maps to one
 | `groq` | `openai-completions` | `GROQ_API_KEY` |
 | `huggingface` | `openai-completions` | `HF_TOKEN` |
 | `kimi-coding` | `anthropic-messages` | `KIMI_API_KEY` |
-| `minimax` | `openai-completions` | `MINIMAX_API_KEY` |
-| `minimax-cn` | `openai-completions` | `MINIMAX_CN_API_KEY` |
+| `minimax` | `openai-completions` | `MINIMAX_API_KEY` — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (older direct IDs removed in v0.63.0) |
+| `minimax-cn` | `openai-completions` | `MINIMAX_CN_API_KEY` — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (older direct IDs removed in v0.63.0) |
 | `mistral` | `mistral-conversations` | `MISTRAL_API_KEY` |
 | `openai` | `openai-responses` | `OPENAI_API_KEY` |
 | `openai-codex` | `openai-codex-responses` | OAuth |
@@ -278,6 +280,15 @@ The model catalog (`models.generated.ts`) defines 23 providers. Each maps to one
 | `zai` | `openai-completions` | `ZAI_API_KEY` |
 
 Additionally, any OpenAI-compatible API (Ollama, vLLM, LM Studio, SGLang) can be used by constructing a custom `Model<"openai-completions">` object.
+
+### Provider Changelog Notes
+
+- **v0.61.0:** Added `gpt-5.4-mini` model for the `openai-codex` provider.
+- **v0.62.0:** Added `BedrockOptions.requestMetadata` for AWS cost allocation tagging.
+- **v0.63.0 (breaking):** Removed deprecated `minimax` and `minimax-cn` direct model IDs. Use `MiniMax-M2.7` or `MiniMax-M2.7-highspeed`.
+- **v0.63.1:** Added `gemini-3.1-pro-preview-customtools` model for the `google-vertex` provider.
+- **v0.65.0:** Added tool streaming support for newer Z.ai models.
+- **v0.65.0:** Fixed Anthropic HTTP 413 `request_too_large` errors to be detected as context overflow, allowing callers to trigger compaction and retry.
 
 ---
 
@@ -638,6 +649,29 @@ interface GoogleOptions extends StreamOptions {
 }
 ```
 
+### BedrockOptions
+
+```typescript
+interface BedrockOptions extends StreamOptions {
+  requestMetadata?: Record<string, string>;
+}
+```
+
+#### requestMetadata (v0.62.0+)
+
+Pass key-value pairs for AWS cost allocation tagging. These forward to the Bedrock Converse API `requestMetadata` field and appear in AWS Cost Explorer split cost allocation data:
+
+```typescript
+const options: BedrockOptions = {
+  requestMetadata: {
+    project: "my-app",
+    team: "backend",
+  },
+};
+```
+
+`BedrockOptions` is exported from the package root entry point.
+
 ### OpenAICompletionsCompat
 
 For OpenAI-compatible providers, the `compat` field on `Model` controls behavior differences:
@@ -780,10 +814,62 @@ Add the provider to:
 
 ---
 
+## ModelRegistry Breaking Changes
+
+`ModelRegistry` is defined in `@mariozechner/pi-agent-core` (the coding-agent package), not in `@mariozechner/pi-ai` itself. Consumers who use `ModelRegistry` for API key resolution should note these changes.
+
+**v0.63.0:** `ModelRegistry.getApiKey(model)` was removed. Use `getApiKeyAndHeaders(model)` instead, which returns `{ apiKey, headers }`:
+
+```typescript
+// Before (removed in v0.63.0)
+const apiKey = await ctx.modelRegistry.getApiKey(model);
+
+// After
+const { apiKey, headers } = await ctx.modelRegistry.getApiKeyAndHeaders(model);
+```
+
+**v0.64.0:** `ModelRegistry` no longer has a public constructor. Use factory methods:
+
+```typescript
+// File-backed registry (reads ~/.pi/models.json)
+const registry = ModelRegistry.create(authStorage);
+const registry = ModelRegistry.create(authStorage, customModelsJsonPath);
+
+// In-memory/test registry (built-in models only, no file I/O)
+const registry = ModelRegistry.inMemory(authStorage);
+
+// Direct `new ModelRegistry(...)` no longer compiles.
+```
+
+---
+
+## Faux Provider
+
+### Faux Provider (v0.64.0+)
+
+For deterministic tests and scripted demos, register a faux provider that returns scripted responses:
+
+```typescript
+import {
+  registerFauxProvider,
+  fauxAssistantMessage,
+  fauxText,
+  fauxThinking,
+  fauxToolCall,
+} from "@mariozechner/pi-ai";
+
+registerFauxProvider();
+// Use provider: "faux" when constructing a model
+```
+
+All faux helpers are exported from the package root via `export * from "./providers/faux.js"`. Use `fauxText`, `fauxThinking`, and `fauxToolCall` to build scripted `AssistantMessage` content, and `fauxAssistantMessage` to assemble full messages.
+
+---
+
 ## Package Metadata
 
 - **Package name**: `@mariozechner/pi-ai`
-- **Version**: 0.60.0
+- **Version**: 0.65.2
 - **License**: MIT
 - **Author**: Mario Zechner
 - **Repository**: `github.com/badlogic/pi-mono` (directory: `packages/ai`)

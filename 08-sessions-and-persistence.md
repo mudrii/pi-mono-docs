@@ -329,6 +329,8 @@ interface BranchSummarySettings {
 
 The `SettingsManager` handles global and project-scoped settings with automatic persistence.
 
+> **Removed in v0.65.0:** The `session_directory` configuration key has been removed from both the extension API and the settings API. Extensions and SDK users that previously depended on it should use `sessionManager.getSessionFile()` to derive the session location, then call `path.dirname()` to get the containing directory.
+
 ### Storage Locations
 
 - **Global**: `~/.pi/agent/settings.json`
@@ -493,6 +495,12 @@ Session files are stored in `~/.pi/agent/sessions/<encoded-cwd>/`. The cwd is en
 /home/user/project  ->  --home-user-project--/
 ```
 
+### Resource Precedence (v0.65.1+)
+
+Project-level and user-level resources (skills, prompt templates, themes) now consistently override package-bundled resources. CLI-provided paths (via `-e`, `--skill`, `--prompt-template`, `--theme`) take the highest precedence over all discovered resources.
+
+Previously, package resources could incorrectly override project/user resources in some discovery paths.
+
 ### Session Persistence Behavior
 
 Sessions use **deferred persistence**: the file is not written until the first assistant response arrives. This avoids creating session files for sessions where the user never sends a message.
@@ -512,6 +520,29 @@ The `_persist()` method:
 | `SessionManager.continueRecent(cwd)` | Most recent session or new |
 | `SessionManager.inMemory()` | No file persistence |
 | `SessionManager.forkFrom(source, cwd)` | Fork from another project |
+
+## AgentSessionRuntime (v0.65.0+)
+
+For SDK users who need to switch between sessions at runtime, `AgentSessionRuntime` wraps session lifecycle with a `CreateAgentSessionRuntimeFactory` closure. The factory recreates all cwd-bound services on every session switch, ensuring `/new`, `/resume`, `/fork`, and import all follow identical initialization.
+
+See `packages/coding-agent/docs/sdk.md` and `examples/sdk/13-session-runtime.ts` for the full API reference and working example.
+
+Key operations:
+
+```typescript
+await runtime.newSession();
+await runtime.switchSession("/path/to/session.jsonl");
+await runtime.fork("entry-id");
+// After each: runtime.session is the new live session
+```
+
+### Missing Session Working Directory (v0.65.1+)
+
+When resuming or importing a session whose original working directory no longer exists:
+- **Interactive mode**: Prompts the user whether to continue in the current working directory.
+- **Non-interactive mode**: Fails with a clear, descriptive error message.
+
+Previously this case could produce cryptic errors or unexpected behavior.
 
 ## Migration System
 

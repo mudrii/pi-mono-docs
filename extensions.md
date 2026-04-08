@@ -1,6 +1,6 @@
 # Extensions
 
-Pi's extension system is the primary way to add functionality. Extensions are TypeScript files (or npm packages) that integrate with the agent lifecycle.
+Pi's extension system is the primary way to add functionality. Extensions are TypeScript files (or npm packages) that integrate with the agent lifecycle. (Updated for v0.65.2.)
 
 ---
 
@@ -37,11 +37,12 @@ An extension is a JavaScript/TypeScript file with a default export function:
 ```typescript
 // my-extension.ts
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { defineTool } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default async function init(ctx: ExtensionContext) {
-  // Register a tool
-  ctx.registerTool({
+  // Register a tool using defineTool() for full TypeScript type inference (v0.65.0+)
+  const fetchTool = defineTool({
     name: "fetch_url",
     label: "Fetch URL",
     description: "Fetch content from a URL",
@@ -63,6 +64,7 @@ export default async function init(ctx: ExtensionContext) {
       };
     }
   });
+  ctx.registerTool(fetchTool);
 
   // Register a slash command
   ctx.registerCommand({
@@ -83,11 +85,33 @@ export default async function init(ctx: ExtensionContext) {
 ### Tool Registration
 
 ```typescript
+// Create a standalone tool definition with type inference (v0.65.0+)
+const myTool = defineTool({ name: "...", parameters: ..., execute: ... });
+
 // Register a tool (returns unregister function)
 const unregister = ctx.registerTool(tool: AgentTool): () => void;
 
 // Get all registered tools (includes parameters)
 ctx.getAllTools(): AgentTool[];
+```
+
+#### `prepareArguments` hook (v0.64.0)
+
+Attach a `prepareArguments` hook to normalize or migrate raw model arguments before schema validation:
+
+```typescript
+ctx.registerTool({
+  name: "my_tool",
+  parameters: ...,
+  prepareArguments: (rawArgs) => {
+    // Normalize legacy argument shapes before validation
+    if (rawArgs.oldField) {
+      return { newField: rawArgs.oldField };
+    }
+    return rawArgs;
+  },
+  execute: async (toolCallId, params, signal) => { ... }
+});
 ```
 
 ### Command Registration
@@ -110,14 +134,37 @@ ctx.on(event: string, handler: Function): void;
 | Event | Description |
 |-------|-------------|
 | `init` | Extension loaded |
-| `session_start` | New session begins |
+| `session_start` | Session begins (startup, reload, new, resume, or fork) — see below |
 | `session_end` | Session ends |
-| `session_directory` | Customize session storage path |
 | `before_tool_call` | Before any tool executes (can block) |
 | `after_tool_call` | After any tool executes (can mutate result) |
 | `before_provider_request` | Before LLM API call (inspect/replace payload) |
 | `terminal_input` | Raw terminal input received |
 | `resources_discover` | Supply additional skills, prompts, themes |
+
+> **Note (v0.65.0):** `session_switch` and `session_fork` events were removed. Use `session_start` with `event.reason`. `session_directory` was also removed from the extension API.
+
+#### `session_start` event
+
+```typescript
+pi.on("session_start", async (event, ctx) => {
+  // event.reason: "startup" | "reload" | "new" | "resume" | "fork"
+  // event.previousSessionFile: set for "new", "resume", and "fork"
+  if (event.reason === "fork") {
+    ctx.setLabel(`Fork of ${event.previousSessionFile}`);
+  }
+});
+```
+
+### Cancellation Signal (v0.63.2)
+
+```typescript
+// ctx.signal is an AbortSignal tied to the active agent turn.
+// Forward it to nested fetch() calls or model API calls for proper cancellation.
+ctx.on("session_start", async (event, ctx) => {
+  const response = await fetch("https://api.example.com/data", { signal: ctx.signal });
+});
+```
 
 ### Session Management
 
@@ -144,6 +191,13 @@ ctx.followUp(message: string | AgentMessage): void;
 
 // Programmatically paste into editor
 ctx.pasteToEditor(text: string): void;
+```
+
+### UI Methods
+
+```typescript
+// Set a custom label for the collapsed thinking block (v0.64.0)
+ctx.ui.setHiddenThinkingLabel("Reasoning...");
 ```
 
 ### UI: Custom Overlays
@@ -220,17 +274,6 @@ ctx.on("terminal_input", (data: Buffer) => {
     return true;
   }
   return false;
-});
-```
-
-### `session_directory`
-
-Customize where session files are stored:
-
-```typescript
-ctx.on("session_directory", (defaultPath: string) => {
-  // Return custom path, or undefined for default
-  return `/my/shared/sessions/${projectName}`;
 });
 ```
 

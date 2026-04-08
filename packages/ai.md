@@ -1,6 +1,6 @@
 # @mariozechner/pi-ai
 
-**Version:** 0.58.4 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
+**Version:** 0.65.2 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
 
 Unified multi-provider LLM streaming API. Provides a consistent interface over 23+ providers with automatic model discovery, token/cost tracking, streaming tool calls, and OAuth utilities.
 
@@ -420,6 +420,37 @@ const partial = parseStreamingJson('{"city": "Lon');
 
 ---
 
+## Amazon Bedrock
+
+### requestMetadata (v0.62.0+)
+
+```typescript
+const options: BedrockOptions = {
+  requestMetadata: { project: "my-app", env: "prod" },
+};
+```
+Forwarded to Bedrock Converse API `requestMetadata`; appears in AWS Cost Explorer split cost allocation.
+
+---
+
+## Faux Provider (v0.64.0+)
+
+For deterministic tests and demos:
+
+```typescript
+import { registerFauxProvider, fauxAssistantMessage, fauxText, fauxThinking, fauxToolCall } from "@mariozechner/pi-ai";
+registerFauxProvider();
+```
+
+---
+
 ## Supported Providers (23+)
 
-`amazon-bedrock`, `anthropic`, `azure-openai-responses`, `cerebras`, `github-copilot`, `google`, `google-antigravity`, `google-gemini-cli`, `google-vertex`, `groq`, `huggingface`, `kimi-coding`, `minimax`, `minimax-cn`, `mistral`, `openai`, `openai-codex`, `opencode`, `opencode-go`, `openrouter`, `vercel-ai-gateway`, `xai`, `zai`
+`amazon-bedrock`, `anthropic`, `azure-openai-responses`, `cerebras`, `github-copilot`, `google`, `google-antigravity`, `google-gemini-cli`, `google-vertex`, `groq`, `huggingface`, `kimi-coding`, `mistral`, `openai`, `openai-codex`, `opencode`, `opencode-go`, `openrouter`, `vercel-ai-gateway`, `xai`, `zai`
+
+### Provider Notes (v0.61.0–v0.65.0)
+
+- **minimax / minimax-cn** (v0.63.0): Direct model IDs removed. Use `MiniMax-M2.7` or `MiniMax-M2.7-highspeed`.
+- **google-vertex** (v0.63.1): Added `gemini-3.1-pro-preview-customtools` model.
+- **openai-codex** (v0.61.0): Added `gpt-5.4-mini` model.
+- **zai** (v0.65.0): Added tool streaming support.

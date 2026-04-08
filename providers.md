@@ -1,6 +1,6 @@
 # LLM Providers
 
-Pi includes 23+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog.
+Pi includes 23+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog. (Updated for v0.65.2.)
 
 ---
 
@@ -10,10 +10,10 @@ Pi includes 23+ LLM providers with 100+ models. Only models supporting tool call
 |-------------|-------------|-------|
 | `anthropic` | `ANTHROPIC_API_KEY` or OAuth | Claude family; Opus 4.6 default (1M context) |
 | `openai` | `OPENAI_API_KEY` | GPT-5.4 default |
-| `openai-codex` | OAuth or `OPENAI_API_KEY` | Responses/WebSocket; GPT-5.3-codex, GPT-5.4 |
+| `openai-codex` | OAuth or `OPENAI_API_KEY` | Responses/WebSocket; GPT-5.3-codex, GPT-5.4, GPT-5.4-mini (v0.61.0) |
 | `azure-openai-responses` | Azure credentials | Azure OpenAI Responses API |
 | `google` | `GEMINI_API_KEY` | Gemini 3.x |
-| `google-vertex` | ADC or `GOOGLE_CLOUD_API_KEY` | Vertex AI |
+| `google-vertex` | ADC or `GOOGLE_CLOUD_API_KEY` | Vertex AI; includes `gemini-3.1-pro-preview-customtools` (v0.63.1) |
 | `google-gemini-cli` | OAuth | Gemini CLI; 1M context |
 | `google-antigravity` | Internal OAuth | Claude Sonnet/Opus 4.6 Thinking |
 | `github-copilot` | OAuth device code | Claude 4.x via Anthropic Messages API |
@@ -24,8 +24,7 @@ Pi includes 23+ LLM providers with 100+ models. Only models supporting tool call
 | `cerebras` | `CEREBRAS_API_KEY` | — |
 | `xai` | `XAI_API_KEY` | Grok models |
 | `mistral` | `MISTRAL_API_KEY` | Native Mistral SDK |
-| `minimax` | `MINIMAX_API_KEY` | MiniMax M2.5 |
-| `minimax-cn` | `MINIMAX_API_KEY` | MiniMax China endpoint |
+| `minimax` | `MINIMAX_API_KEY` | MiniMax — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (v0.63.0: legacy `minimax`/`minimax-cn` direct IDs removed) |
 | `huggingface` | `HF_TOKEN` | OpenAI-compatible Inference Router |
 | `opencode` | `OPENCODE_API_KEY` | OpenCode |
 | `opencode-go` | `OPENCODE_API_KEY` | OpenCode Go |

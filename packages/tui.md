@@ -1,6 +1,6 @@
 # @mariozechner/pi-tui
 
-**Version:** 0.58.4 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
+**Version:** 0.65.2 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
 
 Low-level terminal UI toolkit with differential rendering, Kitty graphics protocol, IME support, and a rich component library.
 
@@ -111,9 +111,22 @@ Single-line changes (e.g., spinner animation) write a single line — minimal te
 |----------|--------|
 | `PI_DEBUG_REDRAW=1` | Log full redraw reasons to `~/.pi/agent/pi-debug.log` |
 | `PI_TUI_DEBUG=1` | Detailed render logs to `/tmp/tui/` |
-| `PI_TUI_WRITE_LOG=<path>` | Log all terminal writes to file |
+| `PI_TUI_WRITE_LOG=<path>` | Directory path: creates `tui-<timestamp>-<pid>.log` per instance (v0.63.0+) |
 | `PI_HARDWARE_CURSOR=1` | Show hardware cursor (for IME) |
 | `PI_CLEAR_ON_SHRINK=0\|1` | Control screen-clear on content shrink |
+
+### Render Scheduling (v0.65.2+)
+
+`requestRender()` coalesces to a 16ms frame budget under streaming load. `requestRender(true)` renders immediately.
+
+### PI_TUI_WRITE_LOG (v0.63.0+)
+
+Set to a directory path. Each instance creates `tui-<timestamp>-<pid>.log` for debugging multiple concurrent pi sessions.
+
+### Keyboard Fixes (v0.64.0)
+
+- **Kitty keypad normalization**: Kitty keyboard protocol keypad functional keys now normalize to logical digits, symbols, and navigation keys, fixing numpad input in terminals such as iTerm2.
+- **CSI cell size parsing**: Cell size response handling now consumes only exact `CSI 6 ; height ; width t` replies, so bare `Escape` is no longer swallowed while waiting for terminal image metadata.
 
 ---
 

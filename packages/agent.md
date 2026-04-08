@@ -1,6 +1,6 @@
 # @mariozechner/pi-agent-core
 
-**Version:** 0.58.4 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
+**Version:** 0.65.2 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
 
 Stateful agent runtime with tool execution, event streaming, and message queue management. Built on top of `@mariozechner/pi-ai`.
 
@@ -47,7 +47,7 @@ const agent = new Agent({
   }
 });
 
-agent.subscribe((event) => {
+agent.subscribe(async (event, signal) => {
   if (event.type === "message_update") {
     const e = event.assistantMessageEvent;
     if (e.type === "text_delta") process.stdout.write(e.delta);
@@ -73,19 +73,16 @@ class Agent {
   // State access
   get state(): AgentState;
 
-  // State mutations
-  setSystemPrompt(v: string): void;
-  setModel(m: Model<any>): void;
-  setThinkingLevel(l: ThinkingLevel): void;
-  setTools(t: AgentTool<any>[]): void;
-  setToolExecution(mode: "sequential" | "parallel"): void;
-  setBeforeToolCall(fn?: BeforeToolCallFn): void;
-  setAfterToolCall(fn?: AfterToolCallFn): void;
+  // Direct property access (v0.65.0+)
+  toolExecution: "sequential" | "parallel";
+  beforeToolCall?: BeforeToolCallFn;
+  afterToolCall?: AfterToolCallFn;
+  transport?: "sse" | "websocket" | "auto";
+  steeringMode: "all" | "one-at-a-time";
+  followUpMode: "all" | "one-at-a-time";
 
-  // Message management
-  replaceMessages(ms: AgentMessage[]): void;
-  appendMessage(m: AgentMessage): void;
-  clearMessages(): void;
+  // Active abort signal for the current turn (v0.63.2+)
+  get signal(): AbortSignal | undefined;
 
   // Steering & follow-up
   steer(m: AgentMessage): void;
@@ -100,7 +97,7 @@ class Agent {
   reset(): void;
 
   // Events
-  subscribe(fn: (e: AgentEvent) => void): () => void;
+  subscribe(fn: (e: AgentEvent, signal: AbortSignal) => Promise<void> | void): () => void;
 
   // Session
   get sessionId(): string | undefined;
@@ -156,17 +153,28 @@ interface AgentOptions {
 
 ```typescript
 interface AgentState {
+  // Mutable fields
   systemPrompt: string;
   model: Model<any>;
   thinkingLevel: ThinkingLevel;
+
+  // Accessor properties (assignment copies the array)
   tools: AgentTool<any>[];
   messages: AgentMessage[];
-  isStreaming: boolean;
-  streamMessage: AgentMessage | null;   // Partial message during streaming
-  pendingToolCalls: Set<string>;
-  error?: string;
+
+  // Readonly (managed by agent loop)
+  readonly isStreaming: boolean;
+  readonly streamingMessage: AgentMessage | null;  // was streamMessage in ≤0.64
+  readonly pendingToolCalls: ReadonlySet<string>;
+  readonly errorMessage: string | undefined;        // was error in ≤0.64
 }
 ```
+
+### Migration from ≤0.64
+
+- `streamMessage` → `streamingMessage`
+- `error` → `errorMessage`
+- `AgentOptions.initialState` no longer accepts readonly fields (`isStreaming`, `streamingMessage`, `pendingToolCalls`, `errorMessage`)
 
 ---
 
@@ -251,10 +259,10 @@ type AgentEvent =
   | { type: "tool_execution_start"; toolCallId: string; toolName: string; args: any }
   | { type: "tool_execution_update"; toolCallId: string; toolName: string; args: any; partialResult: any }
   | { type: "tool_execution_end"; toolCallId: string; toolName: string; result: any; isError: boolean }
-  | { type: "state_change"; state: AgentState };   // v0.58.4: emitted by setModel() and setThinkingLevel()
+  | { type: "state_change"; state: AgentState };   // emitted when state fields change
 
-// Subscribe
-const unsubscribe = agent.subscribe((event) => {
+// Subscribe (v0.65.0+: async listener with signal)
+const unsubscribe = agent.subscribe(async (event, signal) => {
   if (event.type === "message_update") {
     const e = event.assistantMessageEvent;
     if (e.type === "text_delta") console.log(e.delta);
@@ -286,9 +294,9 @@ agent.followUp({
   timestamp: Date.now()
 });
 
-// Control modes
-agent.setSteeringMode("one-at-a-time");   // Process one steering per turn
-agent.setSteeringMode("all");              // Process all steering at once
+// Control modes (v0.65.0+: direct property access)
+agent.steeringMode = "one-at-a-time";   // Process one steering per turn
+agent.steeringMode = "all";             // Process all steering at once
 
 agent.clearSteeringQueue();
 agent.clearFollowUpQueue();
@@ -433,3 +441,66 @@ const agent = new Agent({
 ```
 
 The proxy receives the full context, handles the LLM call server-side, and streams events back.
+
+---
+
+## Breaking Changes (v0.65.0)
+
+### Removed Mutator Methods
+
+All setter methods on `Agent` were replaced with direct property and state access:
+
+| Removed | Replacement |
+|---------|-------------|
+| `agent.setSystemPrompt(v)` | `agent.state.systemPrompt = v` |
+| `agent.setModel(m)` | `agent.state.model = m` |
+| `agent.setThinkingLevel(l)` | `agent.state.thinkingLevel = l` |
+| `agent.setTools(t)` | `agent.state.tools = t` |
+| `agent.replaceMessages(msgs)` | `agent.state.messages = msgs` |
+| `agent.appendMessage(msg)` | `agent.state.messages.push(msg)` |
+| `agent.clearMessages()` | `agent.state.messages = []` |
+| `agent.setToolExecution(m)` | `agent.toolExecution = m` |
+| `agent.setBeforeToolCall(fn)` | `agent.beforeToolCall = fn` |
+| `agent.setAfterToolCall(fn)` | `agent.afterToolCall = fn` |
+| `agent.setTransport(t)` | `agent.transport = t` |
+| `agent.setSteeringMode(m)` | `agent.steeringMode = m` |
+| `agent.getSteeringMode()` | `agent.steeringMode` |
+| `agent.setFollowUpMode(m)` | `agent.followUpMode = m` |
+| `agent.getFollowUpMode()` | `agent.followUpMode` |
+
+### subscribe() — Async with Signal
+
+```typescript
+agent.subscribe(async (event, signal) => { ... });
+```
+
+`agent_end` is now the final emitted event. `waitForIdle()`, `prompt()`, and `continue()` settle after awaited listeners complete.
+
+---
+
+## Agent.signal (v0.63.2+)
+
+Active `AbortSignal` for the current turn (`undefined` when idle). Forward into nested async work for cancellation support.
+
+```typescript
+const result = await fetch(url, { signal: agent.signal });
+```
+
+---
+
+## AgentTool.prepareArguments (v0.64.0+)
+
+Hook to normalize raw model arguments before schema validation. Use for backwards compatibility with old session schemas.
+
+```typescript
+const myTool: AgentTool = {
+  name: "my_tool",
+  parameters: Type.Object({ value: Type.String() }),
+  prepareArguments: (args) => {
+    // Normalize legacy field names before validation
+    const raw = args as any;
+    return { value: raw.val ?? raw.value };
+  },
+  execute: async (id, params, signal) => { ... }
+};
+```

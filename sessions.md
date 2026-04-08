@@ -13,7 +13,7 @@ Pi stores conversations as JSONL files in a tree structure, enabling branching, 
     └── metadata.json     # Title, timestamps, parent session reference
 ```
 
-Override with: `PI_CODING_AGENT_DIR` or the `session_directory` extension event.
+Override with: `PI_CODING_AGENT_DIR`. (The `session_directory` extension event was removed in v0.65.0.)
 
 ---
 
@@ -155,17 +155,27 @@ Also supports sharing to GitHub Gists.
 
 ---
 
+## AgentSessionRuntime (v0.65.0+)
+
+For programmatic session switching in SDK integrations, use `AgentSessionRuntime`. It ensures cwd-bound services are rebuilt on every `/new`, `/resume`, `/fork`, or import operation. See `packages/coding-agent/docs/sdk.md` for details.
+
+```typescript
+// Session switching via runtime (replaces direct session.newSession() / session.switchSession())
+await runtime.newSession();
+await runtime.switchSession("/path/to/session.jsonl");
+await runtime.fork("entry-id");
+// After replacement, runtime.session is the new live session.
+```
+
+## Missing Working Directory (v0.65.1)
+
+When resuming a session whose original working directory no longer exists, interactive mode prompts to continue in the current directory; non-interactive mode fails with a clear error.
+
 ## Session in Extensions
 
 ```typescript
 // Programmatic session switching
 await ctx.switchSession(sessionId);
-
-// Customize session directory
-ctx.on("session_directory", (defaultPath) => {
-  // Return custom path per project
-  return `/shared/sessions/${projectName}`;
-});
 
 // Get/set session name via RPC
 // rpc: set_session_name

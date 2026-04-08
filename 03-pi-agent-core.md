@@ -1,9 +1,9 @@
 # pi-agent-core (`@mariozechner/pi-agent-core`)
 
-Package: `@mariozechner/pi-agent-core` v0.60.0
+Package: `@mariozechner/pi-agent-core` v0.65.2
 Source: `packages/agent/`
 License: MIT | Node >= 20.0.0
-Dependency: `@mariozechner/pi-ai ^0.60.0`
+Dependency: `@mariozechner/pi-ai ^0.65.2`
 
 Stateful agent with tool execution and event streaming. Built on `@mariozechner/pi-ai`, this package provides the `Agent` class and a low-level `agentLoop()` API for driving multi-turn LLM conversations with tool calls, steering, and follow-up queues.
 
@@ -55,27 +55,38 @@ The `Agent` class wraps the agent loop with state management, event subscription
   tools: [],
   messages: [],
   isStreaming: false,
-  streamMessage: null,
-  pendingToolCalls: new Set<string>(),
-  error: undefined,
+  streamingMessage: null,
+  pendingToolCalls: new ReadonlySet<string>(),
+  errorMessage: undefined,
 }
 ```
 
-### AgentState Interface
+## AgentState (v0.65.0+)
+
+`AgentState` was reshaped in v0.65.0:
 
 ```typescript
 interface AgentState {
+  // Mutable
   systemPrompt: string;
   model: Model<any>;
-  thinkingLevel: ThinkingLevel;           // "off" | "minimal" | "low" | "medium" | "high" | "xhigh"
+  thinkingLevel: ThinkingLevel;
+
+  // Accessor properties — assignment copies the provided array
   tools: AgentTool<any>[];
   messages: AgentMessage[];
-  isStreaming: boolean;
-  streamMessage: AgentMessage | null;     // Partial message during streaming
-  pendingToolCalls: Set<string>;          // Tool call IDs currently executing
-  error?: string;
+
+  // Readonly (set by the agent loop — cannot be set externally)
+  readonly isStreaming: boolean;
+  readonly streamingMessage: AgentMessage | null;   // renamed from streamMessage in ≤0.64
+  readonly pendingToolCalls: ReadonlySet<string>;
+  readonly errorMessage: string | undefined;         // renamed from error in ≤0.64
 }
 ```
+
+**Migration:** Replace `agent.state.streamMessage` → `agent.state.streamingMessage`, `agent.state.error` → `agent.state.errorMessage`.
+
+**`AgentOptions.initialState`** no longer accepts `isStreaming`, `streamingMessage`, `pendingToolCalls`, or `errorMessage`. Remove these from initialState objects.
 
 ### Methods
 
@@ -90,21 +101,24 @@ interface AgentState {
 
 Both `prompt()` and `continue()` throw if called while the agent is already streaming. Use `steer()` or `followUp()` to queue messages during streaming.
 
-**State Mutators:**
+**State Mutators (v0.65.0+):**
 
-| Method | Description |
-|--------|-------------|
-| `setSystemPrompt(v)` | Replace system prompt |
-| `setModel(m)` | Switch model |
-| `setThinkingLevel(l)` | Set thinking/reasoning level |
-| `setTools(t)` | Replace tool set |
-| `setToolExecution(v)` | Switch between `"parallel"` and `"sequential"` |
-| `setBeforeToolCall(fn)` | Set/clear beforeToolCall hook |
-| `setAfterToolCall(fn)` | Set/clear afterToolCall hook |
-| `replaceMessages(ms)` | Replace entire message history |
-| `appendMessage(m)` | Append a single message |
-| `clearMessages()` | Clear message history |
-| `reset()` | Clear messages, queues, streaming state, error |
+All `setXxx()` mutator methods were removed in v0.65.0. Use direct property assignment on `agent.state` or on the `agent` instance:
+
+| Removed method | Replacement |
+|----------------|-------------|
+| `agent.setSystemPrompt(v)` | `agent.state.systemPrompt = v` |
+| `agent.setModel(m)` | `agent.state.model = m` |
+| `agent.setThinkingLevel(l)` | `agent.state.thinkingLevel = l` |
+| `agent.setTools(t)` | `agent.state.tools = t` |
+| `agent.replaceMessages(msgs)` | `agent.state.messages = msgs` |
+| `agent.appendMessage(msg)` | `agent.state.messages.push(msg)` |
+| `agent.clearMessages()` | `agent.state.messages = []` |
+| `agent.setToolExecution(m)` | `agent.toolExecution = m` |
+| `agent.setBeforeToolCall(fn)` | `agent.beforeToolCall = fn` |
+| `agent.setAfterToolCall(fn)` | `agent.afterToolCall = fn` |
+| `agent.setTransport(t)` | `agent.transport = t` |
+| `agent.reset()` | `agent.reset()` (unchanged) |
 
 **Steering and Follow-up:**
 
@@ -112,10 +126,8 @@ Both `prompt()` and `continue()` throw if called while the agent is already stre
 |--------|-------------|
 | `steer(m)` | Queue a steering message (delivered after current turn's tool calls finish) |
 | `followUp(m)` | Queue a follow-up message (delivered only when agent has no more work) |
-| `setSteeringMode(mode)` | `"all"` or `"one-at-a-time"` |
-| `setFollowUpMode(mode)` | `"all"` or `"one-at-a-time"` |
-| `getSteeringMode()` | Current steering mode |
-| `getFollowUpMode()` | Current follow-up mode |
+| `agent.steeringMode` | Get/set: `"all"` or `"one-at-a-time"` (replaces `setSteeringMode`/`getSteeringMode`) |
+| `agent.followUpMode` | Get/set: `"all"` or `"one-at-a-time"` (replaces `setFollowUpMode`/`getFollowUpMode`) |
 | `clearSteeringQueue()` | Drop queued steering messages |
 | `clearFollowUpQueue()` | Drop queued follow-up messages |
 | `clearAllQueues()` | Drop all queued messages |
@@ -128,14 +140,24 @@ Both `prompt()` and `continue()` throw if called while the agent is already stre
 | `abort()` | Cancel current operation via AbortController |
 | `waitForIdle()` | Returns a promise that resolves when the current prompt finishes |
 
-**Events:**
+**Events (v0.65.0+):**
+
+Listeners are now **async** and receive the active `AbortSignal` as a second parameter:
 
 ```typescript
+// Before (≤0.64)
 const unsubscribe = agent.subscribe((event: AgentEvent) => {
+  console.log(event.type);
+});
+
+// After (v0.65.0+)
+const unsubscribe = agent.subscribe(async (event: AgentEvent, signal: AbortSignal) => {
   console.log(event.type);
 });
 unsubscribe(); // remove listener
 ```
+
+`agent_end` is now the **final** emitted event for a run. `waitForIdle()`, `prompt()`, and `continue()` settle only after all awaited `agent_end` listeners complete. `agent.state.isStreaming` remains `true` until settlement completes.
 
 **Properties:**
 
@@ -147,6 +169,19 @@ unsubscribe(); // remove listener
 | `transport` | `Transport` | Current transport preference |
 | `toolExecution` | `ToolExecutionMode` | Current tool execution mode |
 | `streamFn` | `StreamFn` | Stream function (public, mutable) |
+| `steeringMode` | `"all" \| "one-at-a-time"` | How steering messages are dequeued |
+| `followUpMode` | `"all" \| "one-at-a-time"` | How follow-up messages are dequeued |
+| `signal` | `AbortSignal \| undefined` | Active abort signal for the current turn (v0.63.2+) |
+
+## Agent.signal (v0.63.2+)
+
+`agent.signal` exposes the active `AbortSignal` for the current turn. Use it to forward cancellation into nested async operations:
+
+```typescript
+const response = await fetch(url, { signal: agent.signal });
+```
+
+Returns `undefined` when no agent turn is active.
 
 ---
 
@@ -233,6 +268,7 @@ prompt("Read config.json")
 ```typescript
 interface AgentTool<TParameters extends TSchema = TSchema, TDetails = any> extends Tool<TParameters> {
   label: string;  // Human-readable name for UI display
+  prepareArguments?: (args: unknown) => Static<TParameters>;  // v0.64.0+
   execute: (
     toolCallId: string,
     params: Static<TParameters>,
@@ -248,6 +284,25 @@ interface AgentToolResult<T> {
 ```
 
 Tool parameters use TypeBox schemas (`@sinclair/typebox`). Arguments are validated with `validateToolArguments()` from pi-ai before execution.
+
+## AgentTool.prepareArguments (v0.64.0+)
+
+Attach a `prepareArguments` hook to normalize raw model arguments before schema validation. Useful for backwards compatibility with sessions saved under old tool schemas:
+
+```typescript
+const myTool: AgentTool<MyParams> = {
+  name: "my-tool",
+  description: "...",
+  parameters: MyParamsSchema,
+  prepareArguments: (rawArgs) => {
+    // Migrate old arg shape to new shape before validation
+    return { ...rawArgs, normalizedField: rawArgs.oldField ?? rawArgs.normalizedField };
+  },
+  execute: async (params) => { ... },
+};
+```
+
+The built-in `edit` tool uses `prepareArguments` to silently migrate legacy single-edit `oldText`/`newText` top-level args into the `edits[]` array format when resuming old sessions.
 
 ### Error Handling
 
@@ -322,12 +377,12 @@ type AgentEvent =
 
 The `Agent` class updates its state in response to events:
 
-- `message_start` / `message_update` → updates `streamMessage`
-- `message_end` → clears `streamMessage`, appends to `messages`
+- `message_start` / `message_update` → updates `streamingMessage`
+- `message_end` → clears `streamingMessage`, appends to `messages`
 - `tool_execution_start` → adds to `pendingToolCalls`
 - `tool_execution_end` → removes from `pendingToolCalls`
-- `turn_end` → captures error from assistant message if present
-- `agent_end` → sets `isStreaming = false`
+- `turn_end` → captures error from assistant message if present (stored as `errorMessage`)
+- `agent_end` → sets `isStreaming = false` (after all awaited listeners settle)
 
 ---
 
@@ -477,7 +532,11 @@ These take an `AgentEventSink` callback (`(event) => Promise<void> | void`) inst
 
 | Version | Date | Change |
 |---------|------|--------|
-| 0.60.0 | 2026-03-18 | Current release |
+| 0.65.2 | 2026-04-06 | Current release |
+| 0.65.0 | 2026-04-03 | **Breaking:** `AgentState` reshaped; `streamMessage`→`streamingMessage`, `error`→`errorMessage`; all `setXxx()` methods removed; `subscribe()` listeners now async with `AbortSignal`; `agent_end` is the final emitted event |
+| 0.64.0 | 2026-03-29 | `AgentTool.prepareArguments` hook; `ModelRegistry` constructor made private |
+| 0.63.2 | 2026-03-29 | `Agent.signal` exposes active `AbortSignal` for the current turn |
+| 0.60.0 | 2026-03-18 | Prior stable release |
 | 0.58.4 | 2026-03-16 | Fix: steering waits for full tool-call batch |
 | 0.58.0 | 2026-03-14 | `beforeToolCall`/`afterToolCall` hooks; parallel tool execution mode |
 | 0.52.12 | 2026-02-13 | `transport` option for provider transport preference |

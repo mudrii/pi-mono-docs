@@ -4,6 +4,121 @@ All pi-mono releases follow lockstep versioning — all packages (`pi-ai`, `pi-t
 
 ---
 
+## v0.65.2 — 2026-04-06
+
+**Features:**
+- `tui`: TUI render scheduling throttle to reduce unnecessary redraws
+- `coding-agent`: Earendil startup announcement with bundled inline image rendering and linked blog post for April 8–9, 2026
+- `coding-agent`: Interactive Anthropic subscription auth warning when subscription auth is active, clarifying that third-party usage draws from extra usage and is billed per token
+- `ai`: Model catalog update
+
+---
+
+## v0.65.1 — 2026-04-05
+
+**Bug fixes:**
+- `coding-agent`: Fixed bash output line-truncation to always persist full output to a temp file (prevents data loss when output exceeds 2000 lines but stays under the byte threshold)
+- `coding-agent`: RPC client now forwards subprocess stderr to parent process in real-time
+- `coding-agent`: Theme file watcher now handles async `fs.watch` error events instead of crashing the process
+- `coding-agent`: Fixed stored session cwd handling; resuming a session whose original working directory no longer exists now prompts interactive users to continue in the current cwd, while non-interactive modes fail with a clear error
+- `coding-agent`: Fixed resource collision precedence so project and user skills, prompt templates, and themes override package resources consistently
+- `coding-agent`: Fixed CLI extension paths (e.g. `git:gist.github.com/...`) being incorrectly resolved against cwd instead of being passed through to the package manager
+- `coding-agent`: Fixed piped stdin runs with `--mode json` to preserve JSONL output instead of falling back to plain text
+
+---
+
+## v0.65.0 — 2026-04-03
+
+**[BREAKING]**
+- Removed extension post-transition events `session_switch` and `session_fork`. Use `session_start` with `event.reason` (`"startup" | "reload" | "new" | "resume" | "fork"`).
+- Removed session-replacement methods from `AgentSession`. Use `AgentSessionRuntime` for `newSession()`, `switchSession()`, `fork()`, and `importFromJsonl()`.
+- Removed `session_directory` from extension and settings APIs.
+- Unknown single-dash CLI flags (e.g. `-s`) now produce an error instead of being silently ignored.
+
+**Features:**
+- `coding-agent`: `createAgentSessionRuntime()` and `AgentSessionRuntime` for closure-based runtime that recreates cwd-bound services on every session switch
+- `coding-agent`: `defineTool()` helper for standalone custom tool definitions with full TypeScript parameter type inference
+- `coding-agent`: Unified diagnostics (`info`/`warning`/`error`) for arg parsing, service creation, session option resolution, and resource loading
+- `tui`: Toggle timestamps on `/tree` entries with `Shift+T` (smart date formatting, preserved through branching)
+
+---
+
+## v0.64.0 — 2026-03-29
+
+**[BREAKING]**
+- `ModelRegistry` no longer has a public constructor. Use `ModelRegistry.create(authStorage, modelsJsonPath?)` or `ModelRegistry.inMemory(authStorage)`.
+
+**Features:**
+- `coding-agent`: `prepareArguments` hook on tool definitions lets extensions normalize or migrate raw model arguments before schema validation; the built-in `edit` tool uses this to transparently support sessions with the old single-edit schema
+- `coding-agent`: Extensions can customize the collapsed thinking block label via `ctx.ui.setHiddenThinkingLabel()`
+- `coding-agent`: Faux provider support
+
+---
+
+## v0.63.2 — 2026-03-29
+
+**Features:**
+- `coding-agent`: `ctx.signal` added to `ExtensionContext` — forwards cancellation into nested model calls and `fetch()`
+- `coding-agent`: Built-in `edit` tool unified to `edits[]` as the only replacement shape (legacy top-level `oldText`/`newText` removed)
+
+**Bug fixes:**
+- `tui`: Fixed TUI keyboard handling and large multi-edit diff rendering
+
+---
+
+## v0.63.1 — 2026-03-27
+
+**Features:**
+- `ai`: Added `gemini-3.1-pro-preview-customtools` model for the `google-vertex` provider
+
+**Bug fixes:**
+- `coding-agent`: Overflow detection improvements for repeated compactions
+
+---
+
+## v0.63.0 — 2026-03-27
+
+**[BREAKING]**
+- `ModelRegistry.getApiKey(model)` replaced by `getApiKeyAndHeaders(model)`. Extensions and SDK integrations must now fetch request auth per call and forward both `apiKey` and `headers`.
+- Removed deprecated direct `minimax` and `minimax-cn` model IDs. Supported direct MiniMax IDs are now `MiniMax-M2.7` and `MiniMax-M2.7-highspeed`.
+
+**Features:**
+- `coding-agent`: `PI_TUI_WRITE_LOG` environment variable to capture raw ANSI stream for debugging
+
+---
+
+## v0.62.0 — 2026-03-23
+
+**Features:**
+- `ai`: `BedrockOptions.requestMetadata` support for attaching custom metadata to Bedrock requests
+
+**Bug fixes:**
+- `ai`: Fixed thinking disable to work correctly across model switches
+- `tui`: Fixed TUI truncation for wide-character content
+
+---
+
+## v0.61.1 — 2026-03-20
+
+**Features:**
+- `ai`: MiniMax metadata support
+
+**Bug fixes:**
+- `tui`: TUI keybinding fix
+- `coding-agent`: Termux compatibility fix
+
+---
+
+## v0.61.0 — 2026-03-20
+
+**Features:**
+- `ai`: Added `gpt-5.4-mini` model for the `openai-codex` provider
+- `coding-agent`: `validateToolArguments` fallback for graceful degradation on invalid tool arguments
+- `ai`: Amazon Bedrock inference profiles support
+- `ai`: OpenRouter reasoning fix
+
+---
+
 ## v0.58.4 — 2026-03-16
 
 **Bug fixes:**

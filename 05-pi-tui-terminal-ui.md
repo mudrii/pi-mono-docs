@@ -1,6 +1,6 @@
 # pi-tui: Terminal User Interface Framework
 
-Package: `@mariozechner/pi-tui` (v0.60.0)
+Package: `@mariozechner/pi-tui` (v0.65.2)
 License: MIT
 Source: `packages/tui/`
 
@@ -215,6 +215,11 @@ Non-Latin keyboard layout support: When the Kitty protocol reports a `baseLayout
 
 Kitty CSI-u printable decoding: `decodeKittyPrintable(data)` extracts printable characters from Kitty CSI-u sequences (needed because Kitty protocol flag 1 wraps all keys in CSI-u, including plain printable characters).
 
+#### Kitty Keyboard Protocol Fixes (v0.64.0)
+
+- **Keypad normalization**: Keypad functional keys now map to logical digits, symbols, and navigation keys. Terminals such as iTerm2 that previously inserted Private Use Area characters for numpad input now work correctly.
+- **CSI cell size parsing**: Terminal cell size responses are now consumed only when they match the exact `CSI 6 ; height ; width t` format, preventing bare `Escape` keystrokes from being swallowed while waiting for terminal image size metadata.
+
 ### Keybindings System (`src/keybindings.ts`)
 
 The `EditorKeybindingsManager` maps editor actions to key identifiers. Each action can be bound to one or more keys. Defaults follow Emacs/readline conventions:
@@ -254,6 +259,10 @@ The file autocomplete:
 - Does not add trailing spaces after directory completions (so the user can continue autocompleting into subdirectories)
 - Handles symlinks (resolves to check if they point to directories)
 
+#### Async Argument Completions (v0.65.0)
+
+Slash-command argument `getArgumentCompletions()` is now properly awaited. Extensions that return async completions no longer crash the completion handler. Invalid return values are also safely ignored.
+
 ### Fuzzy Matching (`src/fuzzy.ts`)
 
 The `fuzzyMatch(query, text)` function matches if all query characters appear in order in the text (not necessarily consecutive). Scoring rewards:
@@ -283,6 +292,10 @@ The `TUI.doRender()` method implements three rendering strategies:
 A special case: if the first changed line is above the previous viewport (content scrolled), a full re-render is triggered.
 
 The `clearOnShrink` option (default: off, controlled by `PI_CLEAR_ON_SHRINK=1`) triggers full re-renders when content shrinks, which clears empty rows but causes more flicker.
+
+### Render Scheduling (v0.65.2+)
+
+Under heavy streaming load, `requestRender()` calls are coalesced to a 16ms frame budget (≈60 fps). Immediate renders remain available via `requestRender(true)`, which bypasses coalescing and renders on the next tick. This prevents frame-rate spikes when streaming produces many rapid updates.
 
 ### Synchronized Output
 
@@ -329,6 +342,10 @@ Additional options:
 
 The `compositeOverlays()` method merges overlay content into base content lines. For each overlay line, `compositeLineAt()` splices the overlay content into the base line at the specified column, preserving ANSI styling on both sides. A final width check truncates the result to prevent terminal overflow.
 
+#### Overlay Padding Fix (v0.65.0)
+
+Non-capturing overlay padding no longer inflates scrollback or corrupts the viewport when the terminal is widened. This fixes layout corruption visible when resizing the terminal window with overlays active.
+
 ## Utilities
 
 ### visibleWidth
@@ -350,3 +367,19 @@ Wraps text to a given width, preserving ANSI codes across line breaks. Reapplies
 - `PI_DEBUG_REDRAW=1` -- Logs full redraw triggers to `~/.pi/agent/pi-debug.log`
 - `PI_HARDWARE_CURSOR=1` -- Shows the real terminal cursor (default: hidden)
 - `PI_CLEAR_ON_SHRINK=1` -- Clear empty rows when content shrinks (default: off)
+
+### TUI Debug Logging (v0.63.0+)
+
+Set the `PI_TUI_WRITE_LOG` environment variable to a directory path to enable per-instance debug logging. Each pi instance creates a unique log file in that directory:
+
+```
+tui-<timestamp>-<pid>.log
+```
+
+This is particularly useful when debugging multiple simultaneous pi sessions:
+
+```bash
+PI_TUI_WRITE_LOG=/tmp/pi-tui-logs pi
+```
+
+If the path is not an existing directory, it is used as a literal file path (legacy behavior).

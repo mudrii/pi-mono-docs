@@ -2,6 +2,8 @@
 
 Pi's extension system enables deep customization of the agent through TypeScript modules that can register tools, commands, keyboard shortcuts, event hooks, UI components, and model providers.
 
+Package: `@mariozechner/pi-coding-agent` v0.65.2
+
 ## Architecture
 
 ### Factory Pattern
@@ -128,6 +130,28 @@ Key fields:
 - `parameters` -- TypeBox schema for parameter validation
 - `execute` -- receives the `ExtensionContext` as the last argument
 - `renderCall` / `renderResult` -- optional custom TUI renderers; if omitted, built-in renderers are used
+- `prepareArguments` -- optional hook to normalize raw model arguments before schema validation (v0.64.0+)
+
+### ToolDefinition.prepareArguments (v0.64.0+)
+
+Attach to any tool definition to normalize raw model arguments before schema validation. Use it to provide backwards compatibility for sessions saved under an old tool schema:
+
+```typescript
+pi.registerTool({
+  name: "my-tool",
+  description: "...",
+  parameters: MySchema,
+  prepareArguments: (rawArgs) => {
+    if (rawArgs.legacyField) {
+      return { currentField: rawArgs.legacyField };
+    }
+    return rawArgs;
+  },
+  execute: async (toolCallId, params, signal, onUpdate, ctx) => { ... },
+});
+```
+
+Post-mutation inputs are not re-validated, so ensure your migration always produces valid params.
 
 ### Command Registration: `pi.registerCommand(name, options)`
 
@@ -268,6 +292,7 @@ Passed to all event handlers via the second argument. Provides read access to se
 | `ctx.sessionManager` | Read-only session manager |
 | `ctx.modelRegistry` | Model registry for API key resolution |
 | `ctx.model` | Current model (may be undefined) |
+| `ctx.signal` | Current agent `AbortSignal`, or `undefined` when no agent turn is active (v0.63.2+) |
 | `ctx.isIdle()` | Whether agent is idle |
 | `ctx.abort()` | Abort current agent operation |
 | `ctx.hasPendingMessages()` | Whether messages are queued |
@@ -275,6 +300,18 @@ Passed to all event handlers via the second argument. Provides read access to se
 | `ctx.getContextUsage()` | Get token usage stats |
 | `ctx.compact(options?)` | Trigger compaction (fire-and-forget) |
 | `ctx.getSystemPrompt()` | Get current effective system prompt |
+
+### ctx.signal (v0.63.2+)
+
+The current agent `AbortSignal`, or `undefined` when no agent turn is active. Forward it into nested model calls, `fetch()`, and other abort-aware async work so that pressing Escape cancels in-flight operations:
+
+```typescript
+pi.on("tool_result", async (event, ctx) => {
+  if (!ctx.signal) return;
+  const data = await fetch("https://api.example.com", { signal: ctx.signal });
+  // ...
+});
+```
 
 ### ExtensionCommandContext (full control)
 
@@ -301,19 +338,48 @@ Events are organized into categories. Handlers can be async and may return resul
 
 ### Session Events
 
+> **Removed in v0.65.0:** `session_directory`, `session_switch`, and `session_fork` have been removed. See [session_start (unified event)](#session_start-v0650-unified-event) below for migration guidance. `session_directory` has also been removed from the settings API — use `ctx.sessionManager.getSessionFile()` with `path.dirname()` to derive the session's base directory.
+
 | Event | When | Return |
 |-------|------|--------|
-| `session_directory` | Before session manager creation, allows custom session directory | `{ sessionDir? }` |
-| `session_start` | On initial session load | -- |
+| `session_start` | On session start, new, resume, fork, or reload | -- |
 | `session_before_switch` | Before switching sessions (can cancel) | `{ cancel? }` |
-| `session_switch` | After switching sessions | -- |
 | `session_before_fork` | Before forking (can cancel) | `{ cancel?, skipConversationRestore? }` |
-| `session_fork` | After forking | -- |
 | `session_before_compact` | Before compaction (can cancel or provide custom compaction) | `{ cancel?, compaction? }` |
 | `session_compact` | After compaction | -- |
 | `session_before_tree` | Before tree navigation (can cancel or provide custom summary) | `{ cancel?, summary?, customInstructions?, label? }` |
 | `session_tree` | After tree navigation | -- |
 | `session_shutdown` | On process exit | -- |
+
+#### session_start (v0.65.0+ unified event)
+
+`session_switch` and `session_fork` events were removed in v0.65.0. All session transitions now fire `session_start` with a `reason` field:
+
+```typescript
+pi.on("session_start", async (event, ctx) => {
+  // event.reason: "startup" | "reload" | "new" | "resume" | "fork"
+  // event.previousSessionFile: set for "new", "resume", "fork"
+
+  if (event.reason === "fork") {
+    ctx.ui.notify(`Forked from ${event.previousSessionFile}`, "info");
+  }
+});
+```
+
+**Migration from removed events:**
+
+```typescript
+// Before (removed in v0.65.0)
+pi.on("session_switch", async (event, ctx) => { ... });
+pi.on("session_fork", async (_event, ctx) => { ... });
+
+// After
+pi.on("session_start", async (event, ctx) => {
+  if (event.reason === "new" || event.reason === "resume" || event.reason === "fork") {
+    // Handle what was previously session_switch or session_fork
+  }
+});
+```
 
 ### Agent Events
 
@@ -417,6 +483,18 @@ ctx.ui.setWidget("my-status", undefined);
 ctx.ui.setStatus("my-ext", "Processing...");
 ctx.ui.setStatus("my-ext", undefined); // clear
 ```
+
+### ctx.ui.setHiddenThinkingLabel(label) (v0.64.0+)
+
+Customize the label shown for collapsed thinking blocks in interactive mode:
+
+```typescript
+pi.on("session_start", async (_event, ctx) => {
+  ctx.ui.setHiddenThinkingLabel("🧠 Reasoning (hidden)");
+});
+```
+
+No-op in RPC mode. See `examples/extensions/hidden-thinking-label.ts` for a runnable example.
 
 ### Custom Components
 

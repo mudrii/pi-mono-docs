@@ -1,6 +1,6 @@
 # Built-in Tools
 
-Pi ships with exactly 4 built-in tools. This is a deliberate design choice: the minimal primitive set that lets the LLM do anything needed via bash.
+Pi ships with exactly 4 built-in tools. This is a deliberate design choice: the minimal primitive set that lets the LLM do anything needed via bash. (Updated for v0.65.2.)
 
 ---
 
@@ -41,19 +41,34 @@ Creates parent directories automatically. Replaces the entire file; use `edit_fi
 
 ### `edit_file`
 
-Make surgical edits to an existing file using search-and-replace.
+Make surgical edits to an existing file using search-and-replace. As of v0.63.2, only the `edits[]` array schema is accepted. The legacy single-edit `oldText`/`newText` at the top level was removed; sessions created before v0.63.2 are transparently migrated via `prepareArguments`.
 
 ```
 Parameters:
   path: string         — File path
-  old_string: string   — Exact text to find (including whitespace)
-  new_string: string   — Replacement text
+  edits: Array         — List of edits to apply
+
+  Each edit:
+    oldText: string    — Exact text to find (including whitespace)
+    newText: string    — Replacement text
 
 Returns:
-  Success confirmation, or error if old_string not found
+  Success confirmation, or error if any oldText not found
 ```
 
-The `old_string` must appear exactly once in the file. Include sufficient surrounding context to ensure uniqueness.
+**Current schema (v0.63.2+):**
+
+```json
+{
+  "path": "/src/file.ts",
+  "edits": [
+    { "oldText": "foo", "newText": "bar" },
+    { "oldText": "baz", "newText": "qux" }
+  ]
+}
+```
+
+Each `oldText` must appear exactly once in the file. Include sufficient surrounding context to ensure uniqueness.
 
 ---
 
@@ -78,6 +93,7 @@ Runs synchronously in a persistent shell process. The working directory and envi
 - Timeout enforced (configurable)
 - stderr and stdout captured separately
 - Exit codes reported
+- When output exceeds 2000 lines, the full output is persisted to a temp file (v0.65.1). The LLM receives a truncated view, but the complete output remains accessible.
 
 **Usage patterns:**
 ```bash

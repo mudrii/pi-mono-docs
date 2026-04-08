@@ -4,7 +4,7 @@
 
 Pi-Mono uses **lockstep versioning** across all packages. Every release bumps all six packages to the same version number simultaneously, even if a particular package has no changes in that release. This means `@mariozechner/pi-coding-agent`, `@mariozechner/pi-ai`, `@mariozechner/pi-tui`, `@mariozechner/pi-agent-core` (formerly `@mariozechner/pi-agent`), `@mariozechner/pi-mom`, and `@mariozechner/pi-web-ui` always share the same version.
 
-As of 2026-03-20, the project has **231 release tags** spanning from `v0.0.1` to `v0.60.0`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.60.0) on 2026-03-18 -- roughly 4 months of rapid development.
+As of 2026-04-09, the project has **241 release tags** spanning from `v0.0.1` to `v0.65.2`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.65.2) on 2026-04-06 -- roughly 4 months of rapid development.
 
 ---
 
@@ -321,6 +321,56 @@ These early tags represent pre-release development. The `pi-ai` package had its 
 
 ---
 
+## Era 7: Session Runtime & API Hardening (v0.61.0 – v0.65.2, 2026-03-20 to 2026-04-06)
+
+This era focused on SDK ergonomics, API hardening, and reliability fixes. It introduced `AgentSessionRuntime` for safe SDK-level session switching, unified extension lifecycle events, and overhauled the `AgentState` API to be immutable by callers. Three releases contain breaking changes (v0.63.0, v0.64.0, v0.65.0).
+
+### v0.61.0 (2026-03-20)
+- **ai**: Added `gpt-5.4-mini` for `openai-codex` provider; `validateToolArguments` falls back gracefully in restricted runtimes (Cloudflare Workers); `google-vertex` API key placeholder fix; OpenRouter `reasoning.effort` payload fix; Bedrock prompt caching for inference profiles via `AWS_BEDROCK_FORCE_CACHE=1`
+
+### v0.61.1 (2026-03-20)
+- **ai**: Normalized MiniMax model metadata; added `MiniMax-M2.1-highspeed` entries for `minimax` and `minimax-cn` providers
+- **tui**: Fixed shared keybinding resolution (user overrides no longer evict unrelated default shortcuts); fixed Termux software keyboard height changes causing full-screen redraws
+
+### v0.62.0 (2026-03-23)
+- **ai**: Added `BedrockOptions.requestMetadata` for AWS cost allocation tagging (forwards to Bedrock Converse API and appears in AWS Cost Explorer); exported `BedrockOptions` type; fixed OpenAI Responses foreign tool-call ID replay; fixed Anthropic thinking-disable handling; fixed explicit thinking disable across Google, Vertex, Gemini CLI, OpenAI Responses, OpenRouter
+- **tui**: Fixed `truncateToWidth()` for very large strings; fixed markdown heading styling after inline code
+
+### v0.63.0 (2026-03-27) **BREAKING**
+- **ai**: Removed `ModelRegistry.getApiKey(model)` → use `getApiKeyAndHeaders(model)`; removed deprecated `minimax` and `minimax-cn` direct model IDs (use `MiniMax-M2.7` or `MiniMax-M2.7-highspeed`)
+- **tui**: Added `PI_TUI_WRITE_LOG` directory for per-instance debug log files; fixed `@` autocomplete debouncing and cancellation; fixed viewport tracking after content shrinks; fixed blockquote inline element styling; fixed slash-command Tab completion chaining
+
+### v0.63.1 (2026-03-27)
+- **ai**: Added `gemini-3.1-pro-preview-customtools` for `google-vertex`; Ollama `prompt too long` overflow detection; Anthropic HTTP 413 `request_too_large` overflow detection
+- **coding-agent**: Fixed repeated compaction dropping kept messages; fixed interactive compaction UI; fixed skill discovery recursion stopping at `SKILL.md`; fixed edit tool diff rendering for multi-edit; fixed auto-compaction for Ollama; fixed built-in tool override rendering
+
+### v0.63.2 (2026-03-29)
+- **agent**: Added `Agent.signal` to expose active `AbortSignal` for the current turn
+- **coding-agent**: Added `ctx.signal` to `ExtensionContext`; edit tool unified to `edits[]` schema only (single-edit `oldText`/`newText` removed)
+- **tui**: Fixed TUI cell size CSI response parsing (bare `Escape` no longer swallowed); Kitty keyboard protocol keypad normalization (fixes iTerm2 numpad)
+
+### v0.64.0 (2026-03-29) **BREAKING**
+- **ai**: Added faux provider helpers for deterministic tests: `registerFauxProvider()`, `fauxAssistantMessage()`, `fauxText()`, `fauxThinking()`, `fauxToolCall()`
+- **agent**: Added `AgentTool.prepareArguments` hook for pre-validation argument normalization
+- **coding-agent**: `ModelRegistry` public constructor removed — use `ModelRegistry.create(authStorage)` or `ModelRegistry.inMemory(authStorage)`; added `ToolDefinition.prepareArguments`; built-in `edit` tool uses `prepareArguments` for legacy schema compatibility; added `ctx.ui.setHiddenThinkingLabel()` for customizing collapsed thinking block label
+- **tui**: Fixed TUI cell size CSI response; Kitty keypad functional key normalization
+
+### v0.65.0 (2026-04-03) **BREAKING**
+- **agent**: `AgentState` reshaped: `streamMessage` → `streamingMessage`, `error` → `errorMessage`; `isStreaming`, `streamingMessage`, `pendingToolCalls`, `errorMessage` now readonly; `tools`/`messages` are now accessor properties; all `setXxx()` mutator methods removed (use direct property assignment); `subscribe()` listeners now async and receive `AbortSignal`; `agent_end` is now the final emitted event
+- **coding-agent**: Added `AgentSessionRuntime` / `createAgentSessionRuntime()` for SDK-level session switching; added `defineTool()` helper with TypeScript type inference; label timestamps in `/tree` with `Shift+T` toggle; unified diagnostics model (`info`/`warning`/`error`); removed `session_switch` and `session_fork` extension events (use `session_start` with `event.reason`); removed `session_directory` from extension and settings APIs; unknown single-dash CLI flags now error
+- **ai**: Z.ai tool streaming support; Bedrock throttling fix (no longer misidentified as context overflow); various provider streaming fixes
+
+### v0.65.1 (2026-04-05)
+- **coding-agent**: Fixed bash output line-truncation (full output persisted to temp file); RpcClient forwards subprocess stderr in real-time; theme file watcher handles async `fs.watch` errors; session cwd prompts interactive users / fails non-interactive when original cwd missing; resource collision precedence fix (project/user resources override package resources); `--mode json` preserved for piped stdin; git/npm extension path CLI resolution; stale `/exit` docs removed from help output
+- **ai**: OpenRouter `cached_tokens` normalization; `cache_write_tokens` preserved in completions stream usage
+
+### v0.65.2 (2026-04-06)
+- **tui**: Render scheduling coalesced to 16ms frame budget under streaming load; `requestRender(true)` still renders immediately
+- **coding-agent**: Earendil startup announcement with inline image rendering; interactive Anthropic subscription auth warning (third-party usage billed per token from extra usage)
+- **ai**: Updated generated model catalog (`packages/ai/src/models.generated.ts`)
+
+---
+
 ## Version Numbering Pattern
 
 The project uses semantic-ish versioning within the 0.x range:
@@ -345,6 +395,9 @@ The most significant breaking changes occurred at:
 - **v0.56.0**: OAuth export path change
 - **v0.57.0**: RPC JSONL framing
 - **v0.60.0**: Startup package update behavior change
+- **v0.63.0**: `ModelRegistry.getApiKey()` removal; deprecated `minimax`/`minimax-cn` model IDs removed
+- **v0.64.0**: `ModelRegistry` public constructor removal
+- **v0.65.0**: `AgentState` reshape (field renames, readonly enforcement, accessor properties); all `Agent.setXxx()` mutator methods removed; `session_switch`/`session_fork` extension events removed; `session_directory` removed; unknown single-dash CLI flags now error
 
 ## Notable Model Milestones
 
@@ -360,3 +413,5 @@ The most significant breaking changes occurred at:
 | 2026-02-05 | v0.52.0 | Claude Opus 4.6, GPT-5.3 Codex |
 | 2026-03-05 | v0.56.2 | GPT-5.4 support |
 | 2026-03-14 | v0.58.0 | Claude 4.6 1M context window |
+| 2026-03-20 | v0.61.0 | `gpt-5.4-mini` for `openai-codex` |
+| 2026-03-27 | v0.63.1 | `gemini-3.1-pro-preview-customtools` for `google-vertex` |

@@ -32,6 +32,16 @@ If `PROMPT` is provided, pi runs in non-interactive (print) mode and exits. Othe
 | `-ns` | Alias for `--no-resume` |
 | `-np` | Alias for `--no-print` |
 
+> **Note (v0.65.0):** Unknown single-dash flags now produce an error instead of being silently ignored. For example, `-s` will error. Use the full `--session` flag instead.
+
+### `--mode json` with piped stdin (v0.65.1)
+
+When input is piped via stdin, `--mode json` is now correctly preserved and JSONL output is maintained instead of falling back to plain text:
+
+```bash
+echo "Explain async/await" | pi --mode json
+```
+
 ### Model Reference Formats
 
 ```bash
@@ -77,7 +87,7 @@ Slash commands are available in the interactive TUI. Type `/` to see completions
 | `/new` | Start a new session |
 | `/resume` | Open session picker (browse, resume, rename, delete) |
 | `/fork [message]` | Fork current session at this point |
-| `/tree` | View session tree with branch folding and jump navigation |
+| `/tree` | View session tree with branch folding and jump navigation; `Shift+T` toggles timestamps (v0.65.0) |
 | `/label <text>` | Label current session entry |
 | `/bookmark [label]` | Bookmark current position |
 | `/export` | Export session as HTML (shareable) |
@@ -115,6 +125,8 @@ Slash commands are available in the interactive TUI. Type `/` to see completions
 | `/reload` | Reload extensions without restarting |
 | `/quit` | Exit pi |
 | `/help` | Show available commands |
+
+> **Note:** `/exit` was removed. Use `q` or `Ctrl+C` to quit the interactive TUI.
 
 ---
 

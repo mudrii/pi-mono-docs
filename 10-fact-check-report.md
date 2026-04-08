@@ -1,6 +1,6 @@
 # Pi-Mono Fact-Check Report
 
-Date: 2026-03-20
+Date: 2026-04-09
 
 This report verifies claims about the Pi-Mono project against publicly available online sources.
 
@@ -12,7 +12,7 @@ This report verifies claims about the Pi-Mono project against publicly available
 
 - **Status**: VERIFIED -- Published and actively maintained on npm
 - **URL**: https://www.npmjs.com/package/@mariozechner/pi-coding-agent
-- **Latest version**: 0.60.0 (published within the last day as of 2026-03-20)
+- **Latest version**: 0.65.2 (published 2026-04-06)
 - **Dependents**: 306 other npm projects depend on this package
 - **Description**: "Coding agent CLI with read, bash, edit, write tools and session management"
 
@@ -42,8 +42,9 @@ This report verifies claims about the Pi-Mono project against publicly available
 - **Status**: VERIFIED -- Repository exists and is actively maintained
 - **URL**: https://github.com/badlogic/pi-mono
 - **Description**: "AI agent toolkit: coding agent CLI, unified LLM API, TUI & web UI libraries, Slack bot, vLLM pods"
-- **Stars**: ~17,400 (17.4k as reported by search results)
-- **Forks**: ~1,800 (1.8k as reported by search results)
+- **Stars**: 33,221 (as of 2026-04-09)
+- **Forks**: 3,681 (as of 2026-04-09)
+- **Open issues**: 21 (as of 2026-04-09)
 - **Activity**: Very active with regular releases, GitHub Actions CI, and community contributions
 - **Releases page**: https://github.com/badlogic/pi-mono/releases
 
@@ -181,12 +182,26 @@ All three remain functional. This is consistent with the changelog entries.
 
 ---
 
-## 8. Verification Summary
+## 8. v0.65.2 Verification
+
+- npm package `@mariozechner/pi-coding-agent` at version 0.65.2 ✓
+- GitHub latest tag v0.65.2 dated 2026-04-06 ✓
+- Breaking changes verified against source:
+  - `AgentState` reshape and `AgentSessionRuntime` introduction (v0.65.0) ✓
+  - `ModelRegistry` public constructor removal → `ModelRegistry.create()` (v0.64.0) ✓
+  - `session_switch` / `session_fork` events removed → unified `session_start` with `event.reason` (v0.65.0) ✓
+  - `session_directory` removed from extension and settings APIs (v0.65.0) ✓
+  - Unknown single-dash CLI flags now produce an error (v0.65.0) ✓
+  - `edit` tool unified to `edits[]` schema only; legacy single-edit migrated via `prepareArguments` (v0.63.2/v0.64.0) ✓
+
+---
+
+## 9. Verification Summary
 
 | Claim | Status | Notes |
 |-------|--------|-------|
-| npm package `@mariozechner/pi-coding-agent` | VERIFIED | v0.60.0, 306 dependents |
-| GitHub repo `badlogic/pi-mono` | VERIFIED | 17.4k stars, 1.8k forks |
+| npm package `@mariozechner/pi-coding-agent` | VERIFIED | v0.65.2, 306 dependents |
+| GitHub repo `badlogic/pi-mono` | VERIFIED | 33.2k stars, 3.7k forks |
 | Website pi.dev | VERIFIED | Redirects from shittycodingagent.ai |
 | Website buildwithpi.ai | VERIFIED | Session viewer, still active |
 | Discord community | VERIFIED | Referenced across multiple sources |

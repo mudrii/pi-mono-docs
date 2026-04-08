@@ -1,6 +1,6 @@
 # pi-coding-agent (`@mariozechner/pi-coding-agent`)
 
-Package: `@mariozechner/pi-coding-agent` v0.60.0
+Package: `@mariozechner/pi-coding-agent` v0.65.2
 Source: `packages/coding-agent/`
 License: MIT | Node >= 20.6.0
 Binary: `pi`
@@ -45,10 +45,13 @@ The `main(args)` function orchestrates the full startup sequence:
 ```typescript
 import { createAgentSession, SessionManager, AuthStorage, ModelRegistry } from "@mariozechner/pi-coding-agent";
 
+const authStorage = AuthStorage.create();
+const modelRegistry = ModelRegistry.create(authStorage); // file-backed (use ModelRegistry.inMemory(authStorage) for tests)
+
 const { session } = await createAgentSession({
   sessionManager: SessionManager.inMemory(),
-  authStorage: AuthStorage.create(),
-  modelRegistry: new ModelRegistry(authStorage),
+  authStorage,
+  modelRegistry,
 });
 
 await session.prompt("What files are in the current directory?");
@@ -479,7 +482,7 @@ The `ExtensionRunner` class manages the runtime lifecycle:
 | `/resume` | Browse and select from past sessions |
 | `/name <name>` | Set session display name |
 | `/session` | Show session info and stats |
-| `/tree` | Navigate session tree (switch branches) |
+| `/tree` | Navigate session tree (switch branches). Press `Shift+T` to toggle timestamp labels on tree entries. |
 | `/fork` | Create a new fork from a previous message |
 | `/compact [prompt]` | Manually compact context |
 | `/copy` | Copy last assistant message to clipboard |
@@ -691,3 +694,83 @@ The package exports a comprehensive public API for programmatic usage:
 **Theme:** `Theme`, `initTheme`, `highlightCode`, `getMarkdownTheme`
 
 **Hooks subpath export:** `@mariozechner/pi-coding-agent/hooks` provides hook types for extension development
+
+---
+
+## AgentSessionRuntime (v0.65.0+)
+
+`AgentSessionRuntime` provides factory-based session replacement for SDK users. It replaces the removed session-replacement methods that were previously on `AgentSession` (`newSession()`, `switchSession()`, etc.).
+
+The runtime takes a `CreateAgentSessionRuntimeFactory` closure that closes over process-global fixed inputs and recreates all cwd-bound services for each session switch. Startup, `/new`, `/resume`, `/fork`, and import all use the same factory — no special cases.
+
+```typescript
+import {
+  type CreateAgentSessionRuntimeFactory,
+  createAgentSessionFromServices,
+  createAgentSessionRuntime,
+  createAgentSessionServices,
+  getAgentDir,
+  SessionManager,
+} from "@mariozechner/pi-coding-agent";
+
+const createRuntime: CreateAgentSessionRuntimeFactory = async ({
+  cwd,
+  sessionManager,
+  sessionStartEvent,
+}) => {
+  const services = await createAgentSessionServices({ cwd });
+  return {
+    ...(await createAgentSessionFromServices({ services, sessionManager, sessionStartEvent })),
+    services,
+    diagnostics: services.diagnostics,
+  };
+};
+
+const runtime = await createAgentSessionRuntime(createRuntime, {
+  cwd: process.cwd(),
+  agentDir: getAgentDir(),
+  sessionManager: SessionManager.create(process.cwd()),
+});
+
+await runtime.newSession();
+await runtime.switchSession("/path/to/session.jsonl");
+await runtime.fork("entry-id");
+
+// After any replacement: runtime.session is the new live session.
+// Rebind session-local subscriptions after each switch.
+```
+
+See `examples/sdk/13-session-runtime.ts` for a complete working example.
+
+---
+
+## defineTool() Helper (v0.65.0+)
+
+`defineTool()` creates standalone custom tool definitions with full TypeScript parameter type inference — no manual type casts needed:
+
+```typescript
+import { defineTool } from "@mariozechner/pi-coding-agent";
+import { Type } from "@sinclair/typebox";
+
+const greetTool = defineTool({
+  name: "greet",
+  description: "Greet someone by name",
+  parameters: Type.Object({
+    name: Type.String({ description: "Name to greet" }),
+  }),
+  execute: async (_toolCallId, { name }) => ({
+    content: [{ type: "text", text: `Hello, ${name}!` }],
+    isError: false,
+  }),
+});
+```
+
+Array literals of tool definitions also keep inferred parameter types without casts. See `docs/extensions.md` for more examples.
+
+---
+
+## Unified Diagnostics (v0.65.0+)
+
+Arg parsing, service creation, session option resolution, and resource loading now return structured diagnostics (`info` / `warning` / `error`) instead of logging or exiting directly. The application layer decides presentation and exit behavior.
+
+Unknown single-dash CLI flags (e.g., `-s`) now produce an `error` diagnostic instead of being silently ignored.

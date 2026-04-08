@@ -75,6 +75,8 @@ All keys are optional. Unknown keys are ignored.
 | `treeFilterMode` | string | Session tree filter: `all`, `bookmarked`, `labeled` |
 | `branchSummary.skipPrompt` | boolean | Skip confirmation when creating branch summaries |
 
+> **Note (v0.65.0):** The `session_directory` configuration key was removed. Use `PI_CODING_AGENT_DIR` to override the agent directory instead.
+
 ### Terminal
 
 ```json
