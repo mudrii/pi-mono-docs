@@ -2,7 +2,7 @@
 
 Pi's extension system enables deep customization of the agent through TypeScript modules that can register tools, commands, keyboard shortcuts, event hooks, UI components, and model providers.
 
-Package: `@mariozechner/pi-coding-agent` v0.65.2
+Package: `@mariozechner/pi-coding-agent` v0.66.1
 
 ## Architecture
 

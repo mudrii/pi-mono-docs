@@ -4,6 +4,16 @@ All pi-mono releases follow lockstep versioning — all packages (`pi-ai`, `pi-t
 
 ---
 
+## v0.66.1 (2026-04-08)
+- **coding-agent**: Changed Earendil announcement from automatic startup notice to hidden `/dementedelves` slash command
+
+## v0.66.0 (2026-04-08)
+- **coding-agent**: Earendil startup announcement with bundled inline image rendering; interactive Anthropic subscription auth warning
+- **ai**: Fixed bare `readline` import to use `node:readline` prefix for Deno compatibility (#2885)
+- **coding-agent**: Fixed auto-retry for stream failures (#2892); Deno compatibility fix
+
+---
+
 ## v0.65.2 — 2026-04-06
 
 **Features:**

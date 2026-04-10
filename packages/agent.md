@@ -1,6 +1,6 @@
 # @mariozechner/pi-agent-core
 
-**Version:** 0.65.2 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
+**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
 
 Stateful agent runtime with tool execution, event streaming, and message queue management. Built on top of `@mariozechner/pi-ai`.
 

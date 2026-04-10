@@ -2,14 +2,14 @@
 
 Comprehensive documentation for **Pi** — a minimal, extensible, terminal-based AI coding agent and supporting library ecosystem.
 
-- **Current release:** v0.65.2 (2026-04-06)
+- **Current release:** v0.66.1 (2026-04-08)
 - **Author:** Mario Zechner ([@badlogic](https://github.com/badlogic))
 - **Package:** [`@mariozechner/pi-coding-agent`](https://www.npmjs.com/package/@mariozechner/pi-coding-agent) on npm
 - **Source:** [github.com/badlogic/pi-mono](https://github.com/badlogic/pi-mono)
 - **Website:** [pi.dev](https://pi.dev) / [shittycodingagent.ai](https://shittycodingagent.ai)
 - **Discord:** [discord.com/invite/3cU7Bz4UPx](https://discord.com/invite/3cU7Bz4UPx)
 
-> This documentation covers all released versions (v0.0.1 through v0.65.2). All content is fact-checked against source code, deepwiki documentation, and online sources.
+> This documentation covers all released versions (v0.0.1 through v0.66.1). All content is fact-checked against source code, deepwiki documentation, and online sources.
 
 ---
 
@@ -33,8 +33,8 @@ Pi's core is deliberately minimal — under 1,000 tokens of system prompt, only 
 | 06 | [Application Packages](06-application-packages.md) | pi-web-ui (ChatPanel, browser), pi-mom (Slack bot, sandbox), pi-pods (GPU management, vLLM) |
 | 07 | [Extension System](07-extension-system.md) | Factory pattern, jiti loading, ExtensionAPI, hooks, UI integration, custom providers, example extensions |
 | 08 | [Sessions & Persistence](08-sessions-and-persistence.md) | JSONL tree structure, branching, compaction, settings management, model resolution, migration |
-| 09 | [Version History](09-version-history.md) | All 241 releases in 7 eras, breaking changes, feature milestones |
-| 10 | [Fact-Check Report](10-fact-check-report.md) | Online verification: npm (306 dependents), GitHub (17.4k stars), domains, Discord, author |
+| 09 | [Version History](09-version-history.md) | All 243 releases in 7 eras, breaking changes, feature milestones |
+| 10 | [Fact-Check Report](10-fact-check-report.md) | Online verification: npm (306 dependents), GitHub (33.8k stars), domains, Discord, author |
 
 ## Supplementary Reference
 
@@ -67,7 +67,7 @@ Previously generated reference docs covering v0.58.4:
 
 ---
 
-## Packages (v0.65.2)
+## Packages (v0.66.1)
 
 | Package | Description |
 |---------|-------------|
@@ -102,11 +102,11 @@ Previously generated reference docs covering v0.58.4:
 - **Total documentation:** ~20,000+ lines across 28 files
 - **Source files reviewed:** 170+ TypeScript files across 7 packages
 - **Providers documented:** 23+ with API identifiers
-- **Releases covered:** 241 versions (v0.0.1 → v0.65.2)
+- **Releases covered:** 243 versions (v0.0.1 → v0.66.1)
 - **Online verifications:** npm, GitHub, 3 domains, Discord, author confirmed
-- **Community:** 17.4k GitHub stars, 1.8k forks, 306 npm dependents
+- **Community:** 33.8k GitHub stars, 3.8k forks
 
 ---
 
-Generated on 2026-04-09 from pi-mono source code at commit `main` (v0.65.2).
+Generated on 2026-04-10 from pi-mono source code at commit `main` (v0.66.1).
 Cross-referenced with [deepwiki.com/badlogic/pi-mono](https://deepwiki.com/badlogic/pi-mono).

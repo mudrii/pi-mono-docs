@@ -1,6 +1,6 @@
 # Pi-Mono Fact-Check Report
 
-Date: 2026-04-09
+Date: 2026-04-10
 
 This report verifies claims about the Pi-Mono project against publicly available online sources.
 
@@ -12,8 +12,8 @@ This report verifies claims about the Pi-Mono project against publicly available
 
 - **Status**: VERIFIED -- Published and actively maintained on npm
 - **URL**: https://www.npmjs.com/package/@mariozechner/pi-coding-agent
-- **Latest version**: 0.65.2 (published 2026-04-06)
-- **Dependents**: 306 other npm projects depend on this package
+- **Latest version**: 0.66.1 (published 2026-04-10)
+- **Dependents**: 306 other npm projects depend on this package (could not re-verify; npm dependents API returned 403)
 - **Description**: "Coding agent CLI with read, bash, edit, write tools and session management"
 
 ### Related packages (all verified on npm)
@@ -42,9 +42,9 @@ This report verifies claims about the Pi-Mono project against publicly available
 - **Status**: VERIFIED -- Repository exists and is actively maintained
 - **URL**: https://github.com/badlogic/pi-mono
 - **Description**: "AI agent toolkit: coding agent CLI, unified LLM API, TUI & web UI libraries, Slack bot, vLLM pods"
-- **Stars**: 33,221 (as of 2026-04-09)
-- **Forks**: 3,681 (as of 2026-04-09)
-- **Open issues**: 21 (as of 2026-04-09)
+- **Stars**: 33.8k (as of 2026-04-10)
+- **Forks**: 3.8k (as of 2026-04-10)
+- **Open issues**: 21 (as of 2026-04-10)
 - **Activity**: Very active with regular releases, GitHub Actions CI, and community contributions
 - **Releases page**: https://github.com/badlogic/pi-mono/releases
 
@@ -182,10 +182,10 @@ All three remain functional. This is consistent with the changelog entries.
 
 ---
 
-## 8. v0.65.2 Verification
+## 8. v0.66.1 Verification
 
-- npm package `@mariozechner/pi-coding-agent` at version 0.65.2 ✓
-- GitHub latest tag v0.65.2 dated 2026-04-06 ✓
+- npm package `@mariozechner/pi-coding-agent` at version 0.66.1 ✓
+- GitHub latest tag v0.66.1 dated 2026-04-10 ✓
 - Breaking changes verified against source:
   - `AgentState` reshape and `AgentSessionRuntime` introduction (v0.65.0) ✓
   - `ModelRegistry` public constructor removal → `ModelRegistry.create()` (v0.64.0) ✓
@@ -200,13 +200,13 @@ All three remain functional. This is consistent with the changelog entries.
 
 | Claim | Status | Notes |
 |-------|--------|-------|
-| npm package `@mariozechner/pi-coding-agent` | VERIFIED | v0.65.2, 306 dependents |
-| GitHub repo `badlogic/pi-mono` | VERIFIED | 33.2k stars, 3.7k forks |
+| npm package `@mariozechner/pi-coding-agent` | VERIFIED | v0.66.1, 306 dependents (npm returned 403 on re-check; count retained from prior verification) |
+| GitHub repo `badlogic/pi-mono` | VERIFIED | 33.8k stars, 3.8k forks |
 | Website pi.dev | VERIFIED | Redirects from shittycodingagent.ai |
 | Website buildwithpi.ai | VERIFIED | Session viewer, still active |
 | Discord community | VERIFIED | Referenced across multiple sources |
 | Author: Mario Zechner (badlogic) | VERIFIED | libGDX creator, npm @mariozechner scope |
-| 231 release tags | VERIFIED | Counted from local git repo |
+| 243 release tags | VERIFIED | Counted from local git repo |
 | OpenClaw uses Pi SDK | VERIFIED | Multiple sources confirm |
 | 15+ LLM providers supported | VERIFIED | Anthropic, OpenAI, Google, Azure, Bedrock, Mistral, Groq, Cerebras, xAI, HuggingFace, Kimi, MiniMax, OpenRouter, Ollama, Vercel, z.ai, OpenCode, GitHub Copilot |
 | Arch Linux AUR package | VERIFIED | https://aur.archlinux.org/packages/pi-coding-agent |

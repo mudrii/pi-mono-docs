@@ -1,6 +1,6 @@
 # @mariozechner/pi-ai
 
-**Version:** 0.65.2 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
+**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
 
 Unified multi-provider LLM streaming API. Provides a consistent interface over 23+ providers with automatic model discovery, token/cost tracking, streaming tool calls, and OAuth utilities.
 
@@ -447,6 +447,10 @@ registerFauxProvider();
 ## Supported Providers (23+)
 
 `amazon-bedrock`, `anthropic`, `azure-openai-responses`, `cerebras`, `github-copilot`, `google`, `google-antigravity`, `google-gemini-cli`, `google-vertex`, `groq`, `huggingface`, `kimi-coding`, `mistral`, `openai`, `openai-codex`, `opencode`, `opencode-go`, `openrouter`, `vercel-ai-gateway`, `xai`, `zai`
+
+### Deno Compatibility (v0.66.0)
+
+The bare `readline` import was changed to `node:readline` for Deno compatibility (#2885). This fix is transparent to Node.js consumers.
 
 ### Provider Notes (v0.61.0–v0.65.0)
 

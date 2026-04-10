@@ -1,6 +1,6 @@
 # @mariozechner/pi-mom
 
-**Version:** 0.65.2 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-mom)
+**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-mom)
 
 A self-managing Slack bot powered by Claude. Mom responds to @mentions and direct messages, executes bash commands, reads/writes files, and builds her own custom tools — all from within Slack.
 

@@ -1,6 +1,6 @@
 # pi-ai: Unified LLM Abstraction Layer
 
-`@mariozechner/pi-ai` (v0.65.2) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 23 providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
+`@mariozechner/pi-ai` (v0.66.1) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 23 providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
 
 Only models that support tool calling (function calling) are included in the catalog, since tool use is essential for the agentic workflows that the coding-agent package builds on top of.
 
@@ -289,6 +289,7 @@ Additionally, any OpenAI-compatible API (Ollama, vLLM, LM Studio, SGLang) can be
 - **v0.63.1:** Added `gemini-3.1-pro-preview-customtools` model for the `google-vertex` provider.
 - **v0.65.0:** Added tool streaming support for newer Z.ai models.
 - **v0.65.0:** Fixed Anthropic HTTP 413 `request_too_large` errors to be detected as context overflow, allowing callers to trigger compaction and retry.
+- **v0.66.0:** Fixed bare `readline` import to use `node:readline` prefix for Deno compatibility (#2885).
 
 ---
 
@@ -869,7 +870,7 @@ All faux helpers are exported from the package root via `export * from "./provid
 ## Package Metadata
 
 - **Package name**: `@mariozechner/pi-ai`
-- **Version**: 0.65.2
+- **Version**: 0.66.1
 - **License**: MIT
 - **Author**: Mario Zechner
 - **Repository**: `github.com/badlogic/pi-mono` (directory: `packages/ai`)

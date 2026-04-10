@@ -18,7 +18,7 @@ The coding agent (`pi`) is the flagship application. It ships with four core too
 
 Pi runs in four modes: interactive TUI, print/JSON output, RPC for process integration, and an SDK for embedding in other applications.
 
-Current version: 0.65.2. License: MIT.
+Current version: 0.66.1. License: MIT.
 
 ---
 
@@ -125,7 +125,7 @@ Code formatting and linting use Biome (v2.3.5), configured in the root `biome.js
 
 ### Lockstep Versioning
 
-All seven packages share the same version number (currently 0.65.2). The `scripts/sync-versions.js` script enforces this by:
+All seven packages share the same version number (currently 0.66.1). The `scripts/sync-versions.js` script enforces this by:
 
 1. Reading all package versions and verifying they match
 2. Updating all inter-package `dependencies` and `devDependencies` to `^<current-version>`

@@ -1,6 +1,6 @@
 # @mariozechner/pi-web-ui
 
-**Version:** 0.65.2 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-web-ui)
+**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-web-ui)
 
 Web UI components for pi: chat interface, artifact panel, IndexedDB session storage, and a multi-format attachment system. Built on Lit web components.
 

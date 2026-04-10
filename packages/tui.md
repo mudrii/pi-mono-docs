@@ -1,6 +1,6 @@
 # @mariozechner/pi-tui
 
-**Version:** 0.65.2 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
+**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
 
 Low-level terminal UI toolkit with differential rendering, Kitty graphics protocol, IME support, and a rich component library.
 
@@ -115,7 +115,11 @@ Single-line changes (e.g., spinner animation) write a single line — minimal te
 | `PI_HARDWARE_CURSOR=1` | Show hardware cursor (for IME) |
 | `PI_CLEAR_ON_SHRINK=0\|1` | Control screen-clear on content shrink |
 
-### Render Scheduling (v0.65.2+)
+### Container.render() Stack Overflow Fix (unreleased, on main)
+
+A stack overflow in `Container.render()` caused by deeply nested component trees has been fixed on main but is not yet part of a release.
+
+### Render Scheduling (v0.66.1+)
 
 `requestRender()` coalesces to a 16ms frame budget under streaming load. `requestRender(true)` renders immediately.
 

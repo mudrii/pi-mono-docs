@@ -4,7 +4,7 @@
 
 Pi-Mono uses **lockstep versioning** across all packages. Every release bumps all six packages to the same version number simultaneously, even if a particular package has no changes in that release. This means `@mariozechner/pi-coding-agent`, `@mariozechner/pi-ai`, `@mariozechner/pi-tui`, `@mariozechner/pi-agent-core` (formerly `@mariozechner/pi-agent`), `@mariozechner/pi-mom`, and `@mariozechner/pi-web-ui` always share the same version.
 
-As of 2026-04-09, the project has **241 release tags** spanning from `v0.0.1` to `v0.65.2`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.65.2) on 2026-04-06 -- roughly 4 months of rapid development.
+As of 2026-04-09, the project has **243 release tags** spanning from `v0.0.1` to `v0.66.1`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.66.1) on 2026-04-08 -- roughly 4 months of rapid development.
 
 ---
 
@@ -311,7 +311,7 @@ These early tags represent pre-release development. The `pi-ai` package had its 
 - OSC 133 terminal integration markers
 - **Breaking**: Custom tool `promptSnippet` required for system prompt inclusion
 
-### v0.60.0 (2026-03-18) -- Current release
+### v0.60.0 (2026-03-18)
 - **Session forking** from CLI with `--fork <path|id>`
 - `createLocalBashOperations()` export for extensions
 - **Breaking**: Startup no longer auto-updates unpinned packages; use `pi update` explicitly
@@ -321,9 +321,9 @@ These early tags represent pre-release development. The `pi-ai` package had its 
 
 ---
 
-## Era 7: Session Runtime & API Hardening (v0.61.0 – v0.65.2, 2026-03-20 to 2026-04-06)
+## Era 7: Session Runtime & API Hardening (v0.61.0 – v0.66.1, 2026-03-20 to 2026-04-08)
 
-This era focused on SDK ergonomics, API hardening, and reliability fixes. It introduced `AgentSessionRuntime` for safe SDK-level session switching, unified extension lifecycle events, and overhauled the `AgentState` API to be immutable by callers. Three releases contain breaking changes (v0.63.0, v0.64.0, v0.65.0).
+This era focused on SDK ergonomics, API hardening, and reliability fixes. It introduced `AgentSessionRuntime` for safe SDK-level session switching, unified extension lifecycle events, and overhauled the `AgentState` API to be immutable by callers. Three releases contain breaking changes (v0.63.0, v0.64.0, v0.65.0). The v0.66.x releases added Earendil startup announcements, Anthropic subscription auth warnings, and Deno compatibility fixes.
 
 ### v0.61.0 (2026-03-20)
 - **ai**: Added `gpt-5.4-mini` for `openai-codex` provider; `validateToolArguments` falls back gracefully in restricted runtimes (Cloudflare Workers); `google-vertex` API key placeholder fix; OpenRouter `reasoning.effort` payload fix; Bedrock prompt caching for inference profiles via `AWS_BEDROCK_FORCE_CACHE=1`
@@ -368,6 +368,14 @@ This era focused on SDK ergonomics, API hardening, and reliability fixes. It int
 - **tui**: Render scheduling coalesced to 16ms frame budget under streaming load; `requestRender(true)` still renders immediately
 - **coding-agent**: Earendil startup announcement with inline image rendering; interactive Anthropic subscription auth warning (third-party usage billed per token from extra usage)
 - **ai**: Updated generated model catalog (`packages/ai/src/models.generated.ts`)
+
+### v0.66.0 (2026-04-08)
+- **coding-agent**: Earendil startup announcement with bundled inline image rendering and linked blog post; interactive Anthropic subscription auth warning when subscription auth is active, clarifying that third-party Anthropic usage draws from extra usage and is billed per token
+- **ai**: Fixed bare `readline` import to use `node:readline` prefix for Deno compatibility (#2885)
+- **coding-agent**: Fixed auto-retry to treat stream failures like `request ended without sending any chunks` as transient errors (#2892)
+
+### v0.66.1 (2026-04-08)
+- **coding-agent**: Changed Earendil announcement from automatic startup notice to hidden `/dementedelves` slash command
 
 ---
 

@@ -1,6 +1,6 @@
 # Built-in Tools
 
-Pi ships with exactly 4 built-in tools. This is a deliberate design choice: the minimal primitive set that lets the LLM do anything needed via bash. (Updated for v0.65.2.)
+Pi ships with exactly 4 built-in tools. This is a deliberate design choice: the minimal primitive set that lets the LLM do anything needed via bash. (Updated for v0.66.1.)
 
 ---
 

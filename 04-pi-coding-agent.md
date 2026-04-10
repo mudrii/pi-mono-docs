@@ -1,6 +1,6 @@
 # pi-coding-agent (`@mariozechner/pi-coding-agent`)
 
-Package: `@mariozechner/pi-coding-agent` v0.65.2
+Package: `@mariozechner/pi-coding-agent` v0.66.1
 Source: `packages/coding-agent/`
 License: MIT | Node >= 20.6.0
 Binary: `pi`
@@ -774,3 +774,13 @@ Array literals of tool definitions also keep inferred parameter types without ca
 Arg parsing, service creation, session option resolution, and resource loading now return structured diagnostics (`info` / `warning` / `error`) instead of logging or exiting directly. The application layer decides presentation and exit behavior.
 
 Unknown single-dash CLI flags (e.g., `-s`) now produce an `error` diagnostic instead of being silently ignored.
+
+---
+
+## v0.66.0 / v0.66.1 Changes
+
+- **v0.66.0:** Added Earendil startup announcement.
+- **v0.66.0:** Added Anthropic subscription auth warning.
+- **v0.66.0:** Fixed bare `readline` import to use `node:readline` prefix for Deno compatibility.
+- **v0.66.0:** Fixed stream error retry handling.
+- **v0.66.1:** Moved Earendil announcement from startup to hidden `/dementedelves` command.

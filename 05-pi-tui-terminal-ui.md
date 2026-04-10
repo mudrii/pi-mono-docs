@@ -1,6 +1,6 @@
 # pi-tui: Terminal User Interface Framework
 
-Package: `@mariozechner/pi-tui` (v0.65.2)
+Package: `@mariozechner/pi-tui` (v0.66.1)
 License: MIT
 Source: `packages/tui/`
 
@@ -293,7 +293,7 @@ A special case: if the first changed line is above the previous viewport (conten
 
 The `clearOnShrink` option (default: off, controlled by `PI_CLEAR_ON_SHRINK=1`) triggers full re-renders when content shrinks, which clears empty rows but causes more flicker.
 
-### Render Scheduling (v0.65.2+)
+### Render Scheduling (v0.66.1+)
 
 Under heavy streaming load, `requestRender()` calls are coalesced to a 16ms frame budget (≈60 fps). Immediate renders remain available via `requestRender(true)`, which bypasses coalescing and renders on the next tick. This prevents frame-rate spikes when streaming produces many rapid updates.
 
@@ -383,3 +383,7 @@ PI_TUI_WRITE_LOG=/tmp/pi-tui-logs pi
 ```
 
 If the path is not an existing directory, it is used as a literal file path (legacy behavior).
+
+### Container.render() Stack Overflow Fix (unreleased, main branch)
+
+A `Container.render()` stack overflow fix was added on the main branch (#2651). This fix is not yet included in any released version.

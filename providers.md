@@ -1,6 +1,6 @@
 # LLM Providers
 
-Pi includes 23+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog. (Updated for v0.65.2.)
+Pi includes 23+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog. (Updated for v0.66.1.)
 
 ---
 

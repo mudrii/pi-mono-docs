@@ -1,6 +1,6 @@
 # Extensions
 
-Pi's extension system is the primary way to add functionality. Extensions are TypeScript files (or npm packages) that integrate with the agent lifecycle. (Updated for v0.65.2.)
+Pi's extension system is the primary way to add functionality. Extensions are TypeScript files (or npm packages) that integrate with the agent lifecycle. (Updated for v0.66.1.)
 
 ---
 
