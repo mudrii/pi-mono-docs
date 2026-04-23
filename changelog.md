@@ -4,6 +4,33 @@ All pi-mono releases follow lockstep versioning — all packages (`pi-ai`, `pi-t
 
 ---
 
+## v0.67.0–v0.69.0 (2026-04-13 to 2026-04-22)
+
+### Breaking Changes
+- **v0.68.0**: Tool selection API changed from `Tool[]` to `string[]`; prebuilt tool exports removed; use factory functions
+- **v0.68.0**: `DefaultResourceLoader`/`loadProjectContextFiles()`/`loadSkills()` require explicit `cwd`
+- **v0.68.0**: `--no-tools` now disables ALL tools (was built-ins only)
+- **v0.69.0**: TypeBox 1.x migration (import from `typebox`, not `@sinclair/typebox`)
+- **v0.69.0**: Session-replacement callbacks invalidate pre-switch objects (use `withSession`)
+
+### New Features
+- Fireworks provider (`FIREWORKS_API_KEY`)
+- Stacked autocomplete providers (`ctx.ui.addAutocompleteProvider`)
+- Terminating tool results (`terminate: true`)
+- OSC 9;4 terminal progress indicators
+- Configurable working indicator (`ctx.ui.setWorkingIndicator`)
+- `/clone` command (duplicate active session)
+- `systemPromptOptions` in `before_agent_start`
+- `session_shutdown` reasons and `targetSessionFile`
+- Bedrock bearer-token auth (`AWS_BEARER_TOKEN_BEDROCK`)
+- `claude-opus-4-7` model added
+- `onResponse` in `StreamOptions`
+- `thinkingDisplay` option (summarized/omitted)
+- Per-tool `executionMode` override
+- Configurable keybindings for model selector and tree filter
+
+---
+
 ## v0.66.1 (2026-04-08)
 - **coding-agent**: Changed Earendil announcement from automatic startup notice to hidden `/dementedelves` slash command
 

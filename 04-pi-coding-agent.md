@@ -1,6 +1,6 @@
 # pi-coding-agent (`@mariozechner/pi-coding-agent`)
 
-Package: `@mariozechner/pi-coding-agent` v0.66.1
+Package: `@mariozechner/pi-coding-agent` v0.69.0
 Source: `packages/coding-agent/`
 License: MIT | Node >= 20.6.0
 Binary: `pi`
@@ -151,17 +151,27 @@ interface PromptOptions {
 
 Default tool set: `read`, `bash`, `edit`, `write` (the `codingTools` array).
 
+> **Breaking change (v0.68.0):** `createAgentSession({ tools })` now accepts `string[]` tool names
+> (e.g., `["read", "bash"]`) instead of `Tool[]` instances. The prebuilt exports `readTool`,
+> `bashTool`, `editTool`, `writeTool`, `grepTool`, `findTool`, `lsTool`, `readOnlyTools`,
+> `codingTools`, and their `*ToolDefinition` counterparts have been **removed**.
+>
+> **Migration:** Use factory functions instead: `createReadTool(cwd)`, `createBashTool(cwd)`,
+> `createCodingTools(cwd)`, etc. Or pass string names: `tools: ["read", "bash"]`.
+>
+> Also: `--no-tools` now disables ALL tools (was: only built-ins).
+
 ### Tool Registry
 
 ```typescript
-// Default coding tools
-const codingTools: Tool[] = [readTool, bashTool, editTool, writeTool];
+// Default coding tools — use factory functions, not prebuilt exports
+createCodingTools(cwd)   // equivalent to [read, bash, edit, write]
 
 // Read-only tools (for exploration)
-const readOnlyTools: Tool[] = [readTool, grepTool, findTool, lsTool];
+createReadOnlyTools(cwd) // equivalent to [read, grep, find, ls]
 
 // All available tools
-const allTools = { read, bash, edit, write, grep, find, ls };
+createAllTools(cwd)      // Record<ToolName, Tool>
 ```
 
 ### Tool Descriptions
@@ -185,7 +195,7 @@ pi
 # Specific tools
 pi --tools read,grep,find,ls
 
-# No built-in tools (extension tools still work)
+# No tools at all (v0.68.0+: disables ALL tools, including extension tools)
 pi --no-tools
 
 # Combine: disable defaults, enable specific
@@ -201,6 +211,10 @@ createCodingTools(cwd: string, options?: ToolsOptions): Tool[]
 createReadOnlyTools(cwd: string, options?: ToolsOptions): Tool[]
 createAllTools(cwd: string, options?: ToolsOptions): Record<ToolName, Tool>
 ```
+
+> **Breaking change (v0.68.0):** `DefaultResourceLoader`, `loadProjectContextFiles()`, and
+> `loadSkills()` now require an explicit `cwd` argument. The ambient `process.cwd()` default
+> has been removed — pass the session or project cwd explicitly.
 
 ---
 
@@ -484,6 +498,7 @@ The `ExtensionRunner` class manages the runtime lifecycle:
 | `/session` | Show session info and stats |
 | `/tree` | Navigate session tree (switch branches). Press `Shift+T` to toggle timestamp labels on tree entries. |
 | `/fork` | Create a new fork from a previous message |
+| `/clone` | Duplicate the current active branch into a new session (v0.68.0+) |
 | `/compact [prompt]` | Manually compact context |
 | `/copy` | Copy last assistant message to clipboard |
 | `/export [file]` | Export session to HTML |
@@ -601,6 +616,10 @@ pi -p @screenshot.png "What's in this image?"
 | `PI_CACHE_RETENTION` | `long` for extended prompt cache |
 | `VISUAL`, `EDITOR` | External editor for Ctrl+G |
 | `PI_OFFLINE` | Offline mode (no network checks) |
+| `PI_CODING_AGENT` | Set to `true` at pi startup; extensions and subprocesses can check this to detect they're running inside pi (v0.67.1+) |
+| `PI_OAUTH_CALLBACK_HOST` | Bind OAuth callback servers to a custom interface instead of `127.0.0.1` (v0.68.0+) |
+| `FIREWORKS_API_KEY` | API key for the Fireworks provider (v0.68.1+) |
+| `AWS_BEARER_TOKEN_BEDROCK` | Authenticate with Bedrock Converse API without local SigV4 credentials (v0.67.67+) |
 
 ---
 
@@ -681,7 +700,7 @@ The package exports a comprehensive public API for programmatic usage:
 
 **Core:** `AgentSession`, `createAgentSession`, `AuthStorage`, `ModelRegistry`, `SessionManager`, `SettingsManager`
 
-**Tools:** `bashTool`, `editTool`, `readTool`, `writeTool`, `grepTool`, `findTool`, `lsTool`, `codingTools`, `readOnlyTools`, plus factory functions (`createBashTool`, `createEditTool`, etc.)
+**Tools:** Factory functions `createBashTool`, `createEditTool`, `createReadTool`, `createWriteTool`, `createGrepTool`, `createFindTool`, `createLsTool`, `createCodingTools`, `createReadOnlyTools`, `createAllTools` (prebuilt instance exports removed in v0.68.0 — see breaking change note above)
 
 **Extension system:** `ExtensionRunner`, `ExtensionAPI` types, event types, tool types
 
@@ -698,6 +717,19 @@ The package exports a comprehensive public API for programmatic usage:
 ---
 
 ## AgentSessionRuntime (v0.65.0+)
+
+> **Breaking change (v0.69.0):** After calling `ctx.newSession()`, `ctx.fork()`, or
+> `ctx.switchSession()`, pre-switch captured extension objects are invalidated. Old `pi` and
+> `ctx` references throw instead of silently targeting the replaced session.
+>
+> **Migration:** Move post-switch work into the `withSession` callback:
+> ```typescript
+> await ctx.newSession({
+>   withSession: async (newCtx) => {
+>     await newCtx.pi.sendUserMessage("hello");
+>   }
+> });
+> ```
 
 `AgentSessionRuntime` provides factory-based session replacement for SDK users. It replaces the removed session-replacement methods that were previously on `AgentSession` (`newSession()`, `switchSession()`, etc.).
 
@@ -746,11 +778,16 @@ See `examples/sdk/13-session-runtime.ts` for a complete working example.
 
 ## defineTool() Helper (v0.65.0+)
 
+> **Breaking change (v0.69.0):** Extensions and SDK integrations must import from `typebox`
+> instead of `@sinclair/typebox`. The root `@sinclair/typebox` is still aliased for legacy
+> loading, but `@sinclair/typebox/compiler` is no longer shimmed. Tool argument validation now
+> works in eval-restricted runtimes (Cloudflare Workers).
+
 `defineTool()` creates standalone custom tool definitions with full TypeScript parameter type inference — no manual type casts needed:
 
 ```typescript
 import { defineTool } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";  // v0.69.0+: import from "typebox", not "@sinclair/typebox"
 
 const greetTool = defineTool({
   name: "greet",
@@ -784,3 +821,40 @@ Unknown single-dash CLI flags (e.g., `-s`) now produce an `error` diagnostic ins
 - **v0.66.0:** Fixed bare `readline` import to use `node:readline` prefix for Deno compatibility.
 - **v0.66.0:** Fixed stream error retry handling.
 - **v0.66.1:** Moved Earendil announcement from startup to hidden `/dementedelves` command.
+
+---
+
+## New in v0.67.x–v0.69.0
+
+### PI_CODING_AGENT (v0.67.1)
+Set to `true` at pi startup. Extensions and subprocesses can check this to detect they're running inside pi.
+
+### Bedrock Bearer-Token Auth (v0.67.67)
+Set `AWS_BEARER_TOKEN_BEDROCK` to authenticate with the Bedrock Converse API without local SigV4 credentials. See providers docs.
+
+### /clone Command (v0.68.0)
+Duplicates the current active session branch into a new session. Unlike `/fork` (which branches from a previous user message), `/clone` creates a copy of the entire current branch.
+
+### Configurable Working Indicator (v0.68.0)
+Extensions can customize the streaming working indicator via `ctx.ui.setWorkingIndicator()`. Supports animated frames, static text, or hidden indicator.
+
+### systemPromptOptions in before_agent_start (v0.68.0)
+The `before_agent_start` event now includes `systemPromptOptions: BuildSystemPromptOptions`, letting extensions inspect the structured system prompt inputs.
+
+### Session Shutdown Reasons (v0.68.0)
+`session_shutdown` events now include `reason` (`"quit"`, `"reload"`, `"new_session"`, `"resume"`, `"fork"`) and `targetSessionFile` for fork/new-session paths.
+
+### PI_OAUTH_CALLBACK_HOST (v0.68.0)
+Set this env var to bind OAuth callback servers to a custom interface instead of `127.0.0.1`.
+
+### Fireworks Provider (v0.68.1)
+Set `FIREWORKS_API_KEY` to use Fireworks models. See providers docs.
+
+### Stacked Autocomplete Providers (v0.69.0)
+Extensions can layer custom completion logic on top of built-in slash/path completion via `ctx.ui.addAutocompleteProvider(provider)`. See the extension docs for details.
+
+### Terminating Tool Results (v0.69.0)
+Custom tools can return `{ terminate: true }` to end the current tool batch without an automatic follow-up LLM call. See extension docs for examples.
+
+### OSC 9;4 Terminal Progress Indicators (v0.69.0)
+Terminals supporting OSC 9;4 (iTerm2, WezTerm, Windows Terminal, Kitty) show a progress indicator in the tab bar during streaming and compaction.

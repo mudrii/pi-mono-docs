@@ -87,6 +87,7 @@ Slash commands are available in the interactive TUI. Type `/` to see completions
 | `/new` | Start a new session |
 | `/resume` | Open session picker (browse, resume, rename, delete) |
 | `/fork [message]` | Fork current session at this point |
+| `/clone` | Duplicate the current active branch into a new session (added v0.68.0) |
 | `/tree` | View session tree with branch folding and jump navigation; `Shift+T` toggles timestamps (v0.65.0) |
 | `/label <text>` | Label current session entry |
 | `/bookmark [label]` | Bookmark current position |

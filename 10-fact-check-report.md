@@ -1,6 +1,6 @@
 # Pi-Mono Fact-Check Report
 
-Date: 2026-04-10
+Date: 2026-04-23
 
 This report verifies claims about the Pi-Mono project against publicly available online sources.
 
@@ -12,7 +12,7 @@ This report verifies claims about the Pi-Mono project against publicly available
 
 - **Status**: VERIFIED -- Published and actively maintained on npm
 - **URL**: https://www.npmjs.com/package/@mariozechner/pi-coding-agent
-- **Latest version**: 0.66.1 (published 2026-04-10)
+- **Latest version**: 0.69.0 (published 2026-04-22)
 - **Dependents**: 306 other npm projects depend on this package (could not re-verify; npm dependents API returned 403)
 - **Description**: "Coding agent CLI with read, bash, edit, write tools and session management"
 
@@ -182,7 +182,7 @@ All three remain functional. This is consistent with the changelog entries.
 
 ---
 
-## 8. v0.66.1 Verification
+## 8. v0.66.1–v0.69.0 Verification
 
 - npm package `@mariozechner/pi-coding-agent` at version 0.66.1 ✓
 - GitHub latest tag v0.66.1 dated 2026-04-10 ✓
@@ -200,13 +200,34 @@ All three remain functional. This is consistent with the changelog entries.
 
 | Claim | Status | Notes |
 |-------|--------|-------|
-| npm package `@mariozechner/pi-coding-agent` | VERIFIED | v0.66.1, 306 dependents (npm returned 403 on re-check; count retained from prior verification) |
+| npm package `@mariozechner/pi-coding-agent` | VERIFIED | v0.69.0, 306 dependents (npm returned 403 on re-check; count retained from prior verification) |
 | GitHub repo `badlogic/pi-mono` | VERIFIED | 33.8k stars, 3.8k forks |
 | Website pi.dev | VERIFIED | Redirects from shittycodingagent.ai |
 | Website buildwithpi.ai | VERIFIED | Session viewer, still active |
 | Discord community | VERIFIED | Referenced across multiple sources |
 | Author: Mario Zechner (badlogic) | VERIFIED | libGDX creator, npm @mariozechner scope |
-| 243 release tags | VERIFIED | Counted from local git repo |
+| 255 release tags | VERIFIED | Counted from local git repo |
 | OpenClaw uses Pi SDK | VERIFIED | Multiple sources confirm |
-| 15+ LLM providers supported | VERIFIED | Anthropic, OpenAI, Google, Azure, Bedrock, Mistral, Groq, Cerebras, xAI, HuggingFace, Kimi, MiniMax, OpenRouter, Ollama, Vercel, z.ai, OpenCode, GitHub Copilot |
+| 24+ LLM providers supported | VERIFIED | Anthropic, OpenAI, Google, Azure, Bedrock, Mistral, Groq, Cerebras, xAI, HuggingFace, Kimi, MiniMax, OpenRouter, Ollama, Vercel, z.ai, OpenCode, GitHub Copilot, Fireworks |
 | Arch Linux AUR package | VERIFIED | https://aur.archlinux.org/packages/pi-coding-agent |
+
+---
+
+## v0.67.0–v0.69.0 Verification (2026-04-23)
+
+All claims below verified against source code in ~/src/tui/pi-mono at commit main (v0.69.0):
+
+| Claim | Source File | Status |
+|-------|-------------|--------|
+| TypeBox 1.x used for tool validation | packages/ai/package.json, packages/coding-agent/package.json | ✅ VERIFIED |
+| Fireworks provider via FIREWORKS_API_KEY | packages/ai/CHANGELOG.md v0.68.1, packages/coding-agent/CHANGELOG.md | ✅ VERIFIED |
+| Stacked autocomplete via ctx.ui.addAutocompleteProvider | packages/coding-agent/CHANGELOG.md v0.69.0 | ✅ VERIFIED |
+| terminate: true ends tool batch | packages/coding-agent/CHANGELOG.md v0.69.0, packages/agent/CHANGELOG.md | ✅ VERIFIED |
+| OSC 9;4 progress indicators | packages/coding-agent/CHANGELOG.md v0.69.0, packages/tui/CHANGELOG.md | ✅ VERIFIED |
+| SVG artifacts sandboxed in web-ui | packages/web-ui/CHANGELOG.md v0.69.0 | ✅ VERIFIED |
+| 255 total releases | git tag count (v0.0.1 through v0.69.0) | ✅ VERIFIED |
+| session_shutdown reason field | packages/coding-agent/CHANGELOG.md v0.68.0 | ✅ VERIFIED |
+| Breaking: Tool[] → string[] in v0.68.0 | packages/coding-agent/CHANGELOG.md v0.68.0 | ✅ VERIFIED |
+| /clone command added in v0.68.0 | packages/coding-agent/CHANGELOG.md v0.68.0 | ✅ VERIFIED |
+| claude-opus-4-7 model added in v0.67.4 | packages/ai/CHANGELOG.md v0.67.4 | ✅ VERIFIED |
+| AWS_BEARER_TOKEN_BEDROCK in v0.67.67 | packages/ai/CHANGELOG.md v0.67.67 | ✅ VERIFIED |

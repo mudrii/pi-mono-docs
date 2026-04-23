@@ -1,6 +1,6 @@
 # @mariozechner/pi-ai
 
-**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
+**Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
 
 Unified multi-provider LLM streaming API. Provides a consistent interface over 23+ providers with automatic model discovery, token/cost tracking, streaming tool calls, and OAuth utilities.
 
@@ -458,3 +458,32 @@ The bare `readline` import was changed to `node:readline` for Deno compatibility
 - **google-vertex** (v0.63.1): Added `gemini-3.1-pro-preview-customtools` model.
 - **openai-codex** (v0.61.0): Added `gpt-5.4-mini` model.
 - **zai** (v0.65.0): Added tool streaming support.
+
+### Provider Notes (v0.67.0–v0.69.0)
+
+- **fireworks** (v0.69.0): Added as a new provider. Register via `registerApiProvider` with `api: "openai-completions"` and `baseUrl: "https://api.fireworks.ai/inference/v1"`.
+
+### TypeBox 1.x Migration (v0.69.0)
+
+Pi now uses `typebox` 1.x (was `@sinclair/typebox` 0.34.x). Update tool definitions and SDK integrations:
+
+```bash
+npm install typebox
+```
+
+```typescript
+// OLD
+import { Type } from "@sinclair/typebox";
+
+// NEW
+import { Type } from "typebox";
+```
+
+The `@sinclair/typebox` package is still aliased for legacy extension loading. However, `@sinclair/typebox/compiler` is no longer shimmed — code importing the compiler directly must migrate. Tool argument validation now runs in eval-restricted environments (Cloudflare Workers, etc.) instead of being silently skipped.
+
+### onResponse and thinkingDisplay (v0.68.0)
+
+`SimpleStreamOptions` now accepts two additional callbacks:
+
+- **`onResponse`** — called once with the raw provider response object before streaming begins. Useful for logging or extracting provider-specific headers.
+- **`thinkingDisplay`** — controls how thinking/reasoning content is surfaced: `"full"` (default), `"hidden"` (omit thinking blocks from the stream), or `"label"` (emit a single label event instead of thinking deltas).

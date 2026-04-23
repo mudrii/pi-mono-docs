@@ -1,9 +1,9 @@
 # pi-agent-core (`@mariozechner/pi-agent-core`)
 
-Package: `@mariozechner/pi-agent-core` v0.66.1
+Package: `@mariozechner/pi-agent-core` v0.69.0
 Source: `packages/agent/`
 License: MIT | Node >= 20.0.0
-Dependency: `@mariozechner/pi-ai ^0.66.1`
+Dependency: `@mariozechner/pi-ai ^0.69.0`
 
 Stateful agent with tool execution and event streaming. Built on `@mariozechner/pi-ai`, this package provides the `Agent` class and a low-level `agentLoop()` API for driving multi-turn LLM conversations with tool calls, steering, and follow-up queues.
 
@@ -263,6 +263,10 @@ prompt("Read config.json")
 
 **Sequential:** Each tool call is prepared, executed, and finalized before the next one starts.
 
+### Per-Tool Execution Mode (v0.67.x)
+
+Individual tools can override the session-level execution mode via `executionMode: "parallel" | "sequential"` on the tool definition. This allows mixing sequential and parallel tools in the same tool set.
+
 ### AgentTool Interface
 
 ```typescript
@@ -303,6 +307,12 @@ const myTool: AgentTool<MyParams> = {
 ```
 
 The built-in `edit` tool uses `prepareArguments` to silently migrate legacy single-edit `oldText`/`newText` top-level args into the `edits[]` array format when resuming old sessions.
+
+### Terminating Tool Results (v0.69.0)
+
+A tool result with `terminate: true` ends the current tool batch without triggering a follow-up LLM call. Useful for structured-output patterns where the tool's result IS the final answer.
+
+> **Fix (v0.68.1):** Parallel tool-call rows now leave the pending state as each tool individually finalizes, while still persisting tool results in assistant source order.
 
 ### Error Handling
 
@@ -532,7 +542,10 @@ These take an `AgentEventSink` callback (`(event) => Promise<void> | void`) inst
 
 | Version | Date | Change |
 |---------|------|--------|
-| 0.66.1 | 2026-04-08 | Current release |
+| 0.69.0 | 2026-04-22 | Current release; **Breaking:** TypeBox 1.x migration; terminating tool results (`terminate: true`) |
+| 0.68.1 | 2026-04-22 | Fix: parallel tool-call rows leave pending state as each tool finalizes; tool results still persisted in assistant source order |
+| 0.67.x | 2026-04-13–16 | Per-tool `executionMode` override; full OpenRouterRouting field set; `onResponse` in StreamOptions; `thinkingDisplay` for Anthropic/Bedrock; Bedrock bearer-token auth |
+| 0.66.1 | 2026-04-08 | Previous stable release |
 | 0.65.0 | 2026-04-03 | **Breaking:** `AgentState` reshaped; `streamMessage`→`streamingMessage`, `error`→`errorMessage`; all `setXxx()` methods removed; `subscribe()` listeners now async with `AbortSignal`; `agent_end` is the final emitted event |
 | 0.64.0 | 2026-03-29 | `AgentTool.prepareArguments` hook; `ModelRegistry` constructor made private |
 | 0.63.2 | 2026-03-29 | `Agent.signal` exposes active `AbortSignal` for the current turn |

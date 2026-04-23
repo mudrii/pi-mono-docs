@@ -1,6 +1,6 @@
 # @mariozechner/pi-tui
 
-**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
+**Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
 
 Low-level terminal UI toolkit with differential rendering, Kitty graphics protocol, IME support, and a rich component library.
 
@@ -648,3 +648,28 @@ sliceByColumn(text: string, start: number, end: number, strict?: boolean): strin
 **tmux note:** Extended key handling requires `set -g extended-keys on` in `~/.tmux.conf`.
 
 **xfce4-terminal / Terminator note:** These terminals do not support Kitty keyboard protocol. Pi detects this and disables extended key reporting.
+
+---
+
+## New in v0.67.x–v0.69.0
+
+### OSC 9;4 Terminal Progress Indicators (v0.69.0)
+Pi emits OSC 9;4 escape sequences during agent streaming and compaction when running in
+supporting terminals (iTerm2, WezTerm, Windows Terminal, Kitty), displaying a progress
+indicator in the terminal tab bar.
+
+### Stacked Autocomplete Providers (v0.69.0)
+The Editor component supports layering custom autocomplete sources via
+`ctx.ui.addAutocompleteProvider(provider)`. Providers are queried in order and results merged
+with the built-in slash/path provider.
+
+### Configurable Working Indicator (v0.68.0)
+Extensions can customize the streaming spinner via `ctx.ui.setWorkingIndicator(opts)`:
+- Animated: `{ frames: ["⠋","⠙","⠹"], intervalMs: 80 }`
+- Static: `{ text: "thinking..." }`
+- Hidden: `{ hidden: true }`
+Custom frames render verbatim (no theme accent color forced).
+
+> **Fix (v0.68.1):** Fuzzy @ autocomplete now follows symlinked directories.
+> **Fix (v0.68.0):** @ autocomplete plain queries no longer match against full cwd path, so worktree path fragments don't crowd out results like @plan.
+> **Fix (v0.69.0):** Typebox compiler shim removed; progress indicator refactored.

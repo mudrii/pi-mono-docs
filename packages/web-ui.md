@@ -1,6 +1,6 @@
 # @mariozechner/pi-web-ui
 
-**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-web-ui)
+**Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-web-ui)
 
 Web UI components for pi: chat interface, artifact panel, IndexedDB session storage, and a multi-format attachment system. Built on Lit web components.
 
@@ -210,7 +210,7 @@ Detected automatically from file extension:
 | Extension | Renderer | Notes |
 |-----------|----------|-------|
 | `.html` | Sandboxed iframe | Full JavaScript execution |
-| `.svg` | SVG inline renderer | |
+| `.svg` | Sandboxed iframe renderer | See fix note below |
 | `.md`, `.markdown` | Markdown renderer | |
 | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.ico` | Image display | |
 | `.pdf` | PDF.js viewer | |
@@ -218,6 +218,9 @@ Detected automatically from file extension:
 | `.docx` | docx-preview viewer | |
 | `.txt` | Plain text | |
 | other | Generic file display | |
+
+> **Fix (v0.69.0):** SVG artifact previews are now rendered inside sandboxed iframes,
+> preventing SVG `<script>` payloads from escaping the sandbox boundary.
 
 ### ArtifactsPanel Component
 

@@ -18,7 +18,7 @@ The coding agent (`pi`) is the flagship application. It ships with four core too
 
 Pi runs in four modes: interactive TUI, print/JSON output, RPC for process integration, and an SDK for embedding in other applications.
 
-Current version: 0.66.1. License: MIT.
+Current version: 0.69.0. License: MIT.
 
 ---
 
@@ -29,7 +29,7 @@ The repository uses npm workspaces. All seven packages live under `packages/`:
 | Package | npm Name | Directory | Description |
 |---------|----------|-----------|-------------|
 | **pi-tui** | `@mariozechner/pi-tui` | `packages/tui` | Terminal UI library with differential rendering, synchronized output (CSI 2026), component system, inline images, and autocomplete |
-| **pi-ai** | `@mariozechner/pi-ai` | `packages/ai` | Unified multi-provider LLM API supporting 20+ providers (OpenAI, Anthropic, Google, Mistral, Bedrock, etc.) with automatic model discovery, token/cost tracking, and cross-provider handoffs |
+| **pi-ai** | `@mariozechner/pi-ai` | `packages/ai` | Unified multi-provider LLM API supporting 24+ providers (OpenAI, Anthropic, Google, Mistral, Bedrock, Fireworks, etc.) with automatic model discovery, token/cost tracking, and cross-provider handoffs |
 | **pi-agent-core** | `@mariozechner/pi-agent-core` | `packages/agent` | Stateful agent runtime with tool execution, event streaming, transport abstraction, and state management |
 | **pi-coding-agent** | `@mariozechner/pi-coding-agent` | `packages/coding-agent` | Interactive coding agent CLI with session management, extension system, skills, prompt templates, and themes |
 | **pi-mom** | `@mariozechner/pi-mom` | `packages/mom` | "Master Of Mischief" -- a self-managing Slack bot that delegates messages to the pi coding agent, runs in Docker sandboxes, and builds its own tools autonomously |
@@ -75,7 +75,7 @@ Tier 1 - Foundation
 
 ### Tier 1: Foundation
 
-- **pi-ai** -- The LLM abstraction layer. Has no dependencies on other pi packages. Provides a unified streaming API across providers, model discovery, tool definition via TypeBox/Zod schemas, token tracking, and context serialization. Providers are lazily loaded via subpath exports (e.g., `@mariozechner/pi-ai/anthropic`).
+- **pi-ai** -- The LLM abstraction layer. Has no dependencies on other pi packages. Provides a unified streaming API across providers, model discovery, tool definition via TypeBox 1.x schemas, token tracking, and context serialization. Providers are lazily loaded via subpath exports (e.g., `@mariozechner/pi-ai/anthropic`).
 - **pi-tui** -- The terminal UI framework. Also has no internal dependencies. Provides differential rendering, component abstractions (Text, Editor, Markdown, SelectList, Image, overlays, etc.), and input handling.
 
 ### Tier 2: Infrastructure
@@ -125,7 +125,7 @@ Code formatting and linting use Biome (v2.3.5), configured in the root `biome.js
 
 ### Lockstep Versioning
 
-All seven packages share the same version number (currently 0.66.1). The `scripts/sync-versions.js` script enforces this by:
+All seven packages share the same version number (currently 0.69.0). The `scripts/sync-versions.js` script enforces this by:
 
 1. Reading all package versions and verifying they match
 2. Updating all inter-package `dependencies` and `devDependencies` to `^<current-version>`
@@ -267,7 +267,7 @@ The coding agent ships with only four tools (read, write, edit, bash) and delibe
 
 ### Provider Agnosticism
 
-pi-ai supports 20+ LLM providers through a unified streaming API. Only models with tool-calling support are included, since tool use is essential for agentic workflows. Providers are lazily loaded to avoid bundling unused SDKs.
+pi-ai supports 24+ LLM providers through a unified streaming API. Only models with tool-calling support are included, since tool use is essential for agentic workflows. Providers are lazily loaded to avoid bundling unused SDKs.
 
 ### Layered SDK
 

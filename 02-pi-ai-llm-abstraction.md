@@ -1,6 +1,6 @@
 # pi-ai: Unified LLM Abstraction Layer
 
-`@mariozechner/pi-ai` (v0.66.1) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 23 providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
+`@mariozechner/pi-ai` (v0.69.0) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 24 providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
 
 Only models that support tool calling (function calling) are included in the catalog, since tool use is essential for the agentic workflows that the coding-agent package builds on top of.
 
@@ -38,7 +38,7 @@ The library is built around several core principles:
 
 4. **Browser and Node.** The library works in browsers (API keys passed explicitly) and Node.js (keys resolved from environment variables). Bedrock and OAuth login flows are Node-only.
 
-5. **TypeBox for schemas.** Tool parameter schemas use `@sinclair/typebox`, which produces JSON Schema at runtime and TypeScript types at compile time. The library re-exports `Type`, `Static`, and `TSchema`.
+5. **TypeBox for schemas.** Tool parameter schemas use `typebox` 1.x (migrated from `@sinclair/typebox` 0.34.x in v0.69.0), which produces JSON Schema at runtime and TypeScript types at compile time. The library re-exports `Type`, `Static`, and `TSchema`.
 
 ---
 
@@ -151,11 +151,16 @@ interface StreamOptions {
   cacheRetention?: "none" | "short" | "long";
   sessionId?: string;
   onPayload?: (payload: unknown, model: Model<Api>) => unknown | undefined | Promise<unknown | undefined>;
+  onResponse?: (response: Response) => void;
   headers?: Record<string, string>;
   maxRetryDelayMs?: number;
   metadata?: Record<string, unknown>;
 }
 ```
+
+| Field | Description |
+|-------|-------------|
+| `onResponse` | Added in v0.67.6. Called after each HTTP response, before the stream is consumed. Inspect provider HTTP status codes and headers. |
 
 ### SimpleStreamOptions
 
@@ -251,7 +256,7 @@ External code can register additional APIs via `registerApiProvider()`, unregist
 
 ## All Supported Providers
 
-The model catalog (`models.generated.ts`) defines 23 providers. Each maps to one of the 10 wire-protocol APIs:
+The model catalog (`models.generated.ts`) defines 24 providers. Each maps to one of the 10 wire-protocol APIs:
 
 | Provider | API Identifier | Auth |
 |----------|---------------|------|
@@ -259,6 +264,7 @@ The model catalog (`models.generated.ts`) defines 23 providers. Each maps to one
 | `anthropic` | `anthropic-messages` | `ANTHROPIC_API_KEY` or `ANTHROPIC_OAUTH_TOKEN` or OAuth |
 | `azure-openai-responses` | `azure-openai-responses` | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_BASE_URL` or `AZURE_OPENAI_RESOURCE_NAME` |
 | `cerebras` | `openai-completions` | `CEREBRAS_API_KEY` |
+| `fireworks` | `anthropic-messages` | `FIREWORKS_API_KEY` — Anthropic-compatible Messages API (added v0.68.1) |
 | `github-copilot` | `anthropic-messages` / `openai-responses` | OAuth (`COPILOT_GITHUB_TOKEN` / `GH_TOKEN` / `GITHUB_TOKEN`) |
 | `google` | `google-generative-ai` | `GEMINI_API_KEY` |
 | `google-antigravity` | `google-generative-ai` | OAuth |
@@ -290,6 +296,14 @@ Additionally, any OpenAI-compatible API (Ollama, vLLM, LM Studio, SGLang) can be
 - **v0.65.0:** Added tool streaming support for newer Z.ai models.
 - **v0.65.0:** Fixed Anthropic HTTP 413 `request_too_large` errors to be detected as context overflow, allowing callers to trigger compaction and retry.
 - **v0.66.0:** Fixed bare `readline` import to use `node:readline` prefix for Deno compatibility (#2885).
+- **v0.67.0:** `OpenRouterRouting` now supports the full field set: fallbacks, ZDR (zero data retention), quantizations, provider sorting, max price, and preferred throughput/latency constraints.
+- **v0.67.4:** Added `claude-opus-4-7` model for Anthropic and OpenRouter providers.
+- **v0.67.4:** Kimi Coding model generation normalizes deprecated `k2p5` to `kimi-for-coding` from models.dev data.
+- **v0.67.6:** Added `onResponse` callback to `StreamOptions`; added `thinkingDisplay` option to `AnthropicOptions` and `BedrockOptions`.
+- **v0.67.67:** Added Bedrock Converse bearer-token authentication via `AWS_BEARER_TOKEN_BEDROCK`.
+- **v0.68.1:** Added `fireworks` provider via Fireworks' Anthropic-compatible Messages API.
+- **v0.69.0 (breaking):** Migrated from `@sinclair/typebox` 0.34.x + AJV to `typebox` 1.x with TypeBox's built-in validator. Tool argument validation now works in eval-restricted runtimes (Cloudflare Workers).
+- **v0.69.0:** Added `gemini-3.1-flash-lite-preview` to `google-gemini-cli` (Cloud Code Assist) built-in model discovery.
 
 ---
 
@@ -584,6 +598,12 @@ The OpenAI Responses provider supports `serviceTier` (`"flex"`, `"priority"`, or
 
 ## Tool Validation
 
+### TypeBox 1.x Migration (v0.69.0)
+
+As of v0.69.0, `@mariozechner/pi-ai` migrated from `@sinclair/typebox` 0.34.x + AJV to `typebox` 1.x with TypeBox's built-in validator. Tool argument validation now works in eval-restricted runtimes (Cloudflare Workers) — previously it was silently skipped.
+
+**Migration:** Install and import from `typebox` instead of `@sinclair/typebox`. Retest coercion-sensitive tool paths — they now go through TypeBox-native validation instead of AJV.
+
 ### validateToolCall()
 
 Defined in `src/utils/validation.ts`:
@@ -593,12 +613,12 @@ function validateToolCall(tools: Tool[], toolCall: ToolCall): any
 function validateToolArguments(tool: Tool, toolCall: ToolCall): any
 ```
 
-These validate tool call arguments against the tool's TypeBox schema using AJV. Features:
+These validate tool call arguments against the tool's TypeBox schema using TypeBox's built-in validator (v0.69.0+; previously used AJV). Features:
 
-- **Type coercion** -- AJV is configured with `coerceTypes: true`, so string `"42"` is coerced to number `42` when the schema expects a number.
-- **Format validation** -- `ajv-formats` adds support for `date-time`, `email`, `uri`, etc.
+- **Type coercion** -- string `"42"` is coerced to number `42` when the schema expects a number.
+- **Format validation** -- standard formats such as `date-time`, `email`, `uri` are supported.
 - **Structured error messages** -- validation errors include the path, message, and received arguments.
-- **Browser extension safety** -- in Chrome extension environments with strict CSP (no `eval`), AJV is disabled and arguments are passed through unvalidated.
+- **Eval-restricted runtime support** -- validation now works in Cloudflare Workers and other environments that restrict dynamic code evaluation (previously was silently skipped in such environments).
 
 The `agentLoop` in the coding-agent package calls `validateToolCall` automatically. When using `stream`/`complete` directly, callers should call it manually after `toolcall_end` events.
 
@@ -620,12 +640,15 @@ interface AnthropicOptions extends StreamOptions {
   thinkingBudgetTokens?: number;     // budget-based (older models)
   effort?: AnthropicEffort;          // adaptive (Opus 4.6, Sonnet 4.6)
   interleavedThinking?: boolean;     // default: true
+  thinkingDisplay?: "summarized" | "omitted";  // added v0.67.6, default: "summarized"
   toolChoice?: "auto" | "any" | "none" | { type: "tool"; name: string };
   client?: Anthropic;                // inject pre-built client
 }
 ```
 
 Adaptive thinking (`type: "adaptive"`) is used for Opus 4.6 and Sonnet 4.6 models. Older models use budget-based thinking (`type: "enabled"` with `budget_tokens`).
+
+`thinkingDisplay` (added v0.67.6): Defaults to `"summarized"` so Claude Opus 4.7 and Mythos Preview keep returning thinking text. Set to `"omitted"` to skip thinking streaming for faster time-to-first-text-token.
 
 ### OpenAIResponsesOptions
 
@@ -655,8 +678,13 @@ interface GoogleOptions extends StreamOptions {
 ```typescript
 interface BedrockOptions extends StreamOptions {
   requestMetadata?: Record<string, string>;
+  thinkingDisplay?: "summarized" | "omitted";  // added v0.67.6, default: "summarized"
 }
 ```
+
+#### Bearer-Token Authentication (v0.67.67+)
+
+Set `AWS_BEARER_TOKEN_BEDROCK` to authenticate without local SigV4 credentials. Useful for GovCloud access. When this environment variable is set, the Bedrock provider uses the SDK's native token auth path and omits Claude `thinking.display` for GovCloud targets.
 
 #### requestMetadata (v0.62.0+)
 
@@ -870,10 +898,10 @@ All faux helpers are exported from the package root via `export * from "./provid
 ## Package Metadata
 
 - **Package name**: `@mariozechner/pi-ai`
-- **Version**: 0.66.1
+- **Version**: 0.69.0
 - **License**: MIT
 - **Author**: Mario Zechner
 - **Repository**: `github.com/badlogic/pi-mono` (directory: `packages/ai`)
 - **Node requirement**: >= 20.0.0
 - **Module format**: ESM only (`"type": "module"`)
-- **Key dependencies**: `@anthropic-ai/sdk`, `openai`, `@google/genai`, `@mistralai/mistralai`, `@aws-sdk/client-bedrock-runtime`, `@sinclair/typebox`, `ajv`, `partial-json`
+- **Key dependencies**: `@anthropic-ai/sdk`, `openai`, `@google/genai`, `@mistralai/mistralai`, `@aws-sdk/client-bedrock-runtime`, `typebox`, `partial-json`

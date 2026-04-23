@@ -2,7 +2,7 @@
 
 Pi's extension system enables deep customization of the agent through TypeScript modules that can register tools, commands, keyboard shortcuts, event hooks, UI components, and model providers.
 
-Package: `@mariozechner/pi-coding-agent` v0.66.1
+Package: `@mariozechner/pi-coding-agent` v0.69.0
 
 ## Architecture
 
@@ -351,6 +351,18 @@ Events are organized into categories. Handlers can be async and may return resul
 | `session_tree` | After tree navigation | -- |
 | `session_shutdown` | On process exit | -- |
 
+As of v0.68.0, the event payload includes:
+- `reason: "quit" | "reload" | "new_session" | "resume" | "fork"` — why the session is ending
+- `targetSessionFile?: string` — the replacement session file path (for fork/new_session/resume)
+
+```typescript
+pi.on("session_shutdown", async (event) => {
+  if (event.reason === "fork") {
+    console.log(`Session forked to: ${event.targetSessionFile}`);
+  }
+});
+```
+
 #### session_start (v0.65.0+ unified event)
 
 `session_switch` and `session_fork` events were removed in v0.65.0. All session transitions now fire `session_start` with a `reason` field:
@@ -388,6 +400,21 @@ pi.on("session_start", async (event, ctx) => {
 | `context` | Before each LLM call; can modify messages | `{ messages? }` |
 | `before_provider_request` | Before provider request is sent; can replace payload | The replacement payload |
 | `before_agent_start` | After user submits but before agent loop | `{ message?, systemPrompt? }` |
+
+As of v0.68.0, the event payload includes `systemPromptOptions: BuildSystemPromptOptions`,
+allowing extensions to inspect the structured inputs used to build the current system prompt
+(cwd, loaded resources, skills, etc.):
+
+```typescript
+pi.on("before_agent_start", async (event) => {
+  const { systemPromptOptions } = event;
+  // Inspect without re-discovering resources
+});
+```
+
+Note: `ctx.getSystemPrompt()` inside `before_agent_start` reflects chained changes from
+earlier handlers, but does NOT reflect provider-level payload modifications.
+
 | `agent_start` | When agent loop starts | -- |
 | `agent_end` | When agent loop ends | -- |
 | `turn_start` | Start of each turn | -- |
@@ -553,6 +580,115 @@ const unsub = ctx.ui.onTerminalInput((data) => {
   return undefined; // pass through
 });
 ```
+
+## Stacked Autocomplete Providers (v0.69.0)
+
+Extensions can register additional autocomplete sources on the editor:
+
+```typescript
+ctx.ui.addAutocompleteProvider({
+  trigger: "#",  // trigger character prefix
+  provide: async (query: string) => {
+    const issues = await fetchGitHubIssues(query);
+    return issues.map(i => ({
+      label: `#${i.number}: ${i.title}`,
+      value: `#${i.number}`
+    }));
+  }
+});
+```
+
+Multiple providers stack on top of the built-in slash/path provider. Results are merged. See
+`examples/extensions/github-issue-autocomplete.ts` for a complete example.
+
+## Terminating Tool Results (v0.69.0)
+
+Custom tools can end the tool batch without triggering a follow-up LLM call by returning
+`terminate: true`:
+
+```typescript
+pi.registerTool({
+  name: "structured_output",
+  description: "Return structured data as the final answer",
+  parameters: Type.Object({ data: Type.String() }),
+  execute: async ({ data }) => ({
+    content: [{ type: "text", text: data }],
+    terminate: true  // ends the batch; no follow-up LLM turn
+  })
+});
+```
+
+Without `terminate: true`, an automatic follow-up LLM call always occurs after tool execution.
+Use this for structured-output flows where the tool result IS the final answer. See
+`examples/extensions/structured-output.ts`.
+
+## Session Replacement Callbacks (v0.69.0)
+
+After calling `ctx.newSession()`, `ctx.fork()`, or `ctx.switchSession()`, pre-switch captured
+extension objects (old `pi`, old `ctx`) are invalidated and throw `InvalidatedSessionError`
+instead of silently targeting the wrong session.
+
+**Migration pattern:**
+```typescript
+// WRONG — pre v0.69.0:
+await ctx.newSession();
+await pi.sendUserMessage("hello"); // Now throws InvalidatedSessionError
+
+// CORRECT — v0.69.0+:
+await ctx.newSession({
+  withSession: async (newCtx) => {
+    // newCtx is bound to the replacement session
+    await newCtx.pi.sendUserMessage("hello");
+  }
+});
+```
+
+**Important notes:**
+- `withSession` runs after `session_shutdown` fires on the old extension instance
+- Previously extracted raw objects (e.g., `const sm = ctx.sessionManager`) remain the
+  caller's responsibility — do not reuse them after a session switch
+
+## Configurable Working Indicator (v0.68.0)
+
+Extensions can customize the streaming spinner shown during agent thinking:
+
+```typescript
+// Animated frames
+ctx.ui.setWorkingIndicator({ frames: ["⠋","⠙","⠹","⠸"], intervalMs: 80 });
+
+// Static text
+ctx.ui.setWorkingIndicator({ text: "analyzing..." });
+
+// Hidden
+ctx.ui.setWorkingIndicator({ hidden: true });
+```
+
+Custom frames render verbatim — no theme accent color is forced. See
+`examples/extensions/working-indicator.ts`.
+
+## TypeBox 1.x Migration (v0.69.0)
+
+Pi now uses `typebox` 1.x (was `@sinclair/typebox` 0.34.x). Update extensions and SDK integrations:
+
+**Install:**
+```bash
+npm install typebox
+```
+
+**Update imports:**
+```typescript
+// OLD
+import { Type } from "@sinclair/typebox";
+
+// NEW
+import { Type } from "typebox";
+```
+
+The root `@sinclair/typebox` package is still aliased for legacy extension loading. However,
+`@sinclair/typebox/compiler` is no longer shimmed — code importing the compiler must migrate.
+
+Tool argument validation now runs in eval-restricted environments (Cloudflare Workers, etc.)
+instead of being silently skipped.
 
 ## Extension Development Workflow
 

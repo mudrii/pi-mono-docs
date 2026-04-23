@@ -6,7 +6,7 @@ This document covers three application-level packages in the pi-mono monorepo: t
 
 ## pi-web-ui: Browser Chat Interface
 
-Package: `@mariozechner/pi-web-ui` (v0.60.0)
+Package: `@mariozechner/pi-web-ui` (v0.69.0)
 License: MIT
 Source: `packages/web-ui/`
 
@@ -104,6 +104,9 @@ Custom message types can be added via TypeScript declaration merging on `CustomA
 
 **Artifacts**: Built into ArtifactsPanel. Supports HTML, SVG, Markdown, text, JSON, images, PDF, DOCX, XLSX. Each artifact type has a dedicated renderer (HtmlArtifact, SvgArtifact, MarkdownArtifact, TextArtifact, ImageArtifact).
 
+> **Fix (v0.69.0):** SVG artifact previews are now rendered inside sandboxed iframes,
+> preventing SVG `<script>` payloads from escaping the sandbox boundary.
+
 Custom tool renderers can be registered via `registerToolRenderer(name, renderer)`.
 
 ### Sandbox Runtime Providers
@@ -149,7 +152,7 @@ Simple string-based i18n via `i18n(key)`, `setLanguage(lang)`, and a `translatio
 
 ## pi-mom: Slack Bot
 
-Package: `@mariozechner/pi-mom` (v0.60.0)
+Package: `@mariozechner/pi-mom` (v0.69.0)
 License: MIT
 Source: `packages/mom/`
 
@@ -311,7 +314,7 @@ Skills are reusable CLI tools stored as directories with a `SKILL.md` file. Skil
 
 ## pi-pods: GPU Pod Management CLI
 
-Package: `@mariozechner/pi` (v0.60.0)
+Package: `@mariozechner/pi` (v0.69.0)
 License: MIT
 Source: `packages/pods/`
 Binary: `pi-pods`

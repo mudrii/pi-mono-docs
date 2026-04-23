@@ -1,6 +1,6 @@
 # @mariozechner/pi-agent-core
 
-**Version:** 0.66.1 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
+**Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
 
 Stateful agent runtime with tool execution, event streaming, and message queue management. Built on top of `@mariozechner/pi-ai`.
 
@@ -9,7 +9,7 @@ Stateful agent runtime with tool execution, event streaming, and message queue m
 ## Installation
 
 ```bash
-npm install @mariozechner/pi-agent-core @mariozechner/pi-ai @sinclair/typebox
+npm install @mariozechner/pi-agent-core @mariozechner/pi-ai typebox
 ```
 
 ---
@@ -19,7 +19,7 @@ npm install @mariozechner/pi-agent-core @mariozechner/pi-ai @sinclair/typebox
 ```typescript
 import { Agent } from "@mariozechner/pi-agent-core";
 import { getModel } from "@mariozechner/pi-ai";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 const model = getModel("anthropic", "claude-opus-4-6");
 
@@ -129,6 +129,7 @@ interface AgentOptions {
   toolExecution?: "sequential" | "parallel";   // Default: "parallel"
   beforeToolCall?: BeforeToolCallFn;
   afterToolCall?: AfterToolCallFn;
+  // Note: individual tools can override toolExecution via executionMode on the tool definition (v0.67.x)
 
   // Custom stream (for proxies, local models, etc.)
   streamFn?: StreamFn;
@@ -181,7 +182,7 @@ interface AgentState {
 ## Defining Tools
 
 ```typescript
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 const myTool: AgentTool = {
   name: "search_code",
@@ -441,6 +442,22 @@ const agent = new Agent({
 ```
 
 The proxy receives the full context, handles the LLM call server-side, and streams events back.
+
+---
+
+## Per-Tool Execution Mode (v0.67.x)
+
+Individual tools can override the session-level execution mode via `executionMode: "parallel" | "sequential"` on the tool definition. This allows mixing sequential and parallel tools in the same tool set.
+
+---
+
+## Terminating Tool Results (v0.69.0)
+
+A tool result with `terminate: true` ends the current tool batch without triggering a follow-up LLM call. Useful for structured-output patterns where the tool's result IS the final answer.
+
+---
+
+> **Fix (v0.68.1):** Parallel tool-call rows now leave the pending state as each tool individually finalizes, while still persisting tool results in assistant source order.
 
 ---
 

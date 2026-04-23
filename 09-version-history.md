@@ -4,7 +4,7 @@
 
 Pi-Mono uses **lockstep versioning** across all packages. Every release bumps all six packages to the same version number simultaneously, even if a particular package has no changes in that release. This means `@mariozechner/pi-coding-agent`, `@mariozechner/pi-ai`, `@mariozechner/pi-tui`, `@mariozechner/pi-agent-core` (formerly `@mariozechner/pi-agent`), `@mariozechner/pi-mom`, and `@mariozechner/pi-web-ui` always share the same version.
 
-As of 2026-04-09, the project has **243 release tags** spanning from `v0.0.1` to `v0.66.1`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.66.1) on 2026-04-08 -- roughly 4 months of rapid development.
+As of 2026-04-23, the project has **255 release tags** spanning from `v0.0.1` to `v0.69.0`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.69.0) on 2026-04-22 -- roughly 5 months of rapid development.
 
 ---
 
@@ -379,6 +379,116 @@ This era focused on SDK ergonomics, API hardening, and reliability fixes. It int
 
 ---
 
+## Era 7 Continued: v0.67.x–v0.69.x (2026-04-13 to 2026-04-22)
+
+### v0.67.0 (2026-04-13)
+- **ai**: Full `OpenRouterRouting` field support (fallbacks, ZDR, quantizations, provider sorting, max price, preferred throughput/latency constraints)
+- **ai**: Gemma 4 thinking level fixes — uses `thinkingLevel` field, maps Pi reasoning levels to model-supported levels
+- **ai**: Gemini 2.5 Flash Lite minimal thinking budget fixed (512-token minimum)
+- **ai**: OpenAI Codex Responses `serviceTier` forwarding restored
+- **ai**: Antigravity User-Agent bumped to 1.21.9
+
+### v0.67.1 (2026-04-13)
+- **coding-agent**: `PI_CODING_AGENT=true` env var now set at startup
+- **coding-agent**: Anonymous telemetry: version ping to pi.dev on interactive startup (opt-out via `/settings`, `PI_TELEMETRY=0`)
+- **ai**: `coding-agent` set as `PI_CODING_AGENT` environment variable
+
+### v0.67.2 (2026-04-14)
+- **coding-agent**: Multiple `--append-system-prompt` flags supported
+- **coding-agent**: Inline extension factories for `main()`
+- **coding-agent**: Kitty super-modifier input support
+
+### v0.67.3 (2026-04-15)
+- **ai**: `google-vertex` ADC marker detection fixed — `gcp-vertex-credentials` now correctly triggers ADC fallback
+
+### v0.67.4 (2026-04-16)
+- **ai**: `claude-opus-4-7` model added for Anthropic and OpenRouter
+- **ai**: Anthropic prompt caching: `cache_control` breakpoint added on last tool definition
+- **ai**: Kimi Coding model normalized — deprecated `k2p5` mapped to `kimi-for-coding` from models.dev
+- **coding-agent**: Scoped model selector and session-tree filter shortcuts configurable via keybindings
+- **coding-agent**: `/clone` introduced as separate command from `/fork`
+
+### v0.67.5 (2026-04-16)
+- **ai**: Opus 4.7 adaptive thinking fully supported across Anthropic and Bedrock; `xhigh` reasoning mapped correctly
+
+### v0.67.6 (2026-04-16)
+- **ai**: `onResponse` callback added to `StreamOptions` — inspect HTTP status/headers after each response
+- **ai**: `thinkingDisplay: "summarized" | "omitted"` added to `AnthropicOptions` and `BedrockOptions`; defaults to `"summarized"`
+- **ai**: OpenAI Responses prompt caching fixed for non-`api.openai.com` proxies (litellm, etc.)
+- **coding-agent**: `after_provider_response` extension hook
+- **coding-agent**: Compact startup header with expandable extension summary
+
+### v0.67.67 (2026-04-17)
+- **ai**: Bedrock bearer-token auth via `AWS_BEARER_TOKEN_BEDROCK` (API-key style, no SigV4 required)
+- **ai**: Mistral tool definition TypeBox symbol metadata stripped before SDK validation
+- **ai**: Mistral Small 4 reasoning fixed — `reasoning_effort` instead of `prompt_mode`
+- **ai**: Qwen chat-template thinking preservation across turns
+- **ai**: OpenAI Codex service-tier accounting aligned with caller-selected tier
+- **coding-agent**: System prompt dates stabilized to `YYYY-MM-DD` format (locale-independent)
+- **coding-agent**: Network connection lost treated as retryable error (auto-retry)
+- **coding-agent**: Extension startup summaries disambiguate package vs local extensions
+
+### v0.67.68 (2026-04-17)
+- **ai**: Bedrock GovCloud `Authorization` header duplication fixed — uses SDK native token auth
+- **ai**: Bedrock GovCloud `thinking.display` omitted for GovCloud targets
+
+### v0.68.0 (2026-04-20) — BREAKING
+**Breaking Changes:**
+- Tool selection changed from `Tool[]` instances to `string[]` names (`"read"`, `"bash"`, etc.); prebuilt exports `readTool`, `bashTool`, `editTool`, `writeTool`, `grepTool`, `findTool`, `lsTool`, `readOnlyTools`, `codingTools`, and `*ToolDefinition` values removed — use factory functions (`createReadTool(cwd)` etc.)
+- `DefaultResourceLoader`, `loadProjectContextFiles()`, `loadSkills()` now require explicit `cwd`; ambient `process.cwd()` default removed
+- `--no-tools` now disables ALL tools (was: built-ins only)
+
+**New Features:**
+- **coding-agent/tui**: Configurable streaming working indicator via `ctx.ui.setWorkingIndicator()` (animated, static, hidden)
+- **coding-agent**: `systemPromptOptions: BuildSystemPromptOptions` exposed in `before_agent_start` event
+- **coding-agent**: `/clone` command — duplicate current active branch into new session
+- **coding-agent**: `ctx.fork()` supports `position: "before" | "at"` for branching point control
+- **coding-agent**: Configurable keybindings for scoped model selector and tree filter actions
+- **coding-agent**: `session_shutdown` events now include `reason` and `targetSessionFile`
+- **coding-agent**: `PI_OAUTH_CALLBACK_HOST` — custom OAuth callback bind address
+- **coding-agent**: `pi update` batches npm package updates per scope
+- **agent**: Per-tool `executionMode` override (sequential/parallel per individual tool)
+- **ai**: `PI_OAUTH_CALLBACK_HOST` for all OAuth providers
+
+**Fixes:**
+- Shell path resolution uses session cwd (not ambient process.cwd)
+- Working indicator custom frames render verbatim (not forced to theme accent)
+- xterm uppercase typing restored (Shift+letter input)
+- `/compact` reuses session thinking level
+- Share page uses browser-safe shortcuts
+- @ autocomplete no longer matches against full cwd path
+- Skill resolution deduplicates symlinked aliases
+
+### v0.68.1 (2026-04-22)
+- **ai/coding-agent**: Fireworks provider — Anthropic-compatible Messages API, `FIREWORKS_API_KEY` auth, built-in models from models.dev
+- **ai**: Anthropic streaming hardened — own SSE parsing with defensive JSON repair, `eager_input_streaming` per-tool (replaces deprecated `fine-grained-tool-streaming` header)
+- **ai**: Bedrock regional endpoint resolution restored for `AWS_REGION`/`AWS_PROFILE` inference profiles
+- **coding-agent**: Inline tool image width configurable via `terminal.imageWidthCells` in `/settings`
+- **coding-agent**: `sessionDir` in `settings.json` now expands `~`
+- **coding-agent**: Parallel tool-call rows finalize eagerly per tool (UI responsiveness)
+- **coding-agent**: `grep`, `find`, `ls` output rendered correctly in HTML exports
+- **tui**: Fuzzy @ autocomplete follows symlinked directories
+
+### v0.69.0 (2026-04-22) — BREAKING
+**Breaking Changes:**
+- TypeBox 1.x migration: from `@sinclair/typebox` 0.34.x + AJV to `typebox` 1.x with built-in validator; import from `typebox`; `@sinclair/typebox/compiler` no longer shimmed; tool validation now works in eval-restricted runtimes (Cloudflare Workers)
+- Session-replacement callbacks: `ctx.newSession()`, `ctx.fork()`, `ctx.switchSession()` now invalidate pre-switch captured objects; move post-switch work into `withSession` callback
+
+**New Features:**
+- **coding-agent/tui**: Stacked extension autocomplete providers via `ctx.ui.addAutocompleteProvider()`
+- **agent**: Terminating tool results — return `terminate: true` to end tool batch without follow-up LLM call
+- **tui/coding-agent**: OSC 9;4 terminal progress indicators during streaming and compaction (iTerm2, WezTerm, Windows Terminal, Kitty)
+- **ai**: `gemini-3.1-flash-lite-preview` added to Cloud Code Assist model lists
+
+**Fixes:**
+- Exported session HTML sanitizes markdown link URLs (XSS fix for `javascript:` URIs)
+- `ctx.getSystemPrompt()` in `before_agent_start` reflects chained system prompt changes from earlier handlers
+- Models.json `headers`-only overrides (without `baseUrl`) now load correctly
+- SVG artifact previews sandboxed in web-ui iframes
+- `transformMessages()` synthesizes missing trailing tool results for orphaned assistant tool calls
+
+---
+
 ## Version Numbering Pattern
 
 The project uses semantic-ish versioning within the 0.x range:
@@ -406,6 +516,8 @@ The most significant breaking changes occurred at:
 - **v0.63.0**: `ModelRegistry.getApiKey()` removal; deprecated `minimax`/`minimax-cn` model IDs removed
 - **v0.64.0**: `ModelRegistry` public constructor removal
 - **v0.65.0**: `AgentState` reshape (field renames, readonly enforcement, accessor properties); all `Agent.setXxx()` mutator methods removed; `session_switch`/`session_fork` extension events removed; `session_directory` removed; unknown single-dash CLI flags now error
+- **v0.68.0**: Tool selection changed from `Tool[]` to `string[]` names; prebuilt tool exports removed; `DefaultResourceLoader`/`loadProjectContextFiles()`/`loadSkills()` require explicit `cwd`; `--no-tools` now disables all tools
+- **v0.69.0**: TypeBox 1.x migration (import from `typebox`, not `@sinclair/typebox`); session-replacement callbacks invalidate pre-switch objects
 
 ## Notable Model Milestones
 
@@ -423,3 +535,6 @@ The most significant breaking changes occurred at:
 | 2026-03-14 | v0.58.0 | Claude 4.6 1M context window |
 | 2026-03-20 | v0.61.0 | `gpt-5.4-mini` for `openai-codex` |
 | 2026-03-27 | v0.63.1 | `gemini-3.1-pro-preview-customtools` for `google-vertex` |
+| 2026-04-16 | v0.67.4 | `claude-opus-4-7` added for Anthropic and OpenRouter |
+| 2026-04-22 | v0.68.1 | Fireworks provider added (`FIREWORKS_API_KEY`) |
+| 2026-04-22 | v0.69.0 | `gemini-3.1-flash-lite-preview` added to Cloud Code Assist |

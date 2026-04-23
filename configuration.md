@@ -87,6 +87,9 @@ All keys are optional. Unknown keys are ignored.
 }
 ```
 
+### `terminal.imageWidthCells` (v0.68.1)
+Configure the terminal column width for inline tool output images. Default: 60.
+
 ### Keys
 
 ```json
@@ -298,7 +301,11 @@ PI_TUI_WRITE_LOG=/tmp/pi.log       # Capture raw ANSI stream
 PI_DEBUG_REDRAW=1                  # Log redraw triggers
 PI_HARDWARE_CURSOR=1               # Enable hardware cursor
 PI_CLEAR_ON_SHRINK=1               # Clear on content shrink
+PI_OAUTH_CALLBACK_HOST=0.0.0.0    # Custom OAuth callback bind address (v0.68.0)
 ```
+
+### `PI_OAUTH_CALLBACK_HOST` (v0.68.0)
+Set to bind OAuth callback servers to a custom interface instead of hardcoded `127.0.0.1`.
 
 ### AWS Bedrock
 

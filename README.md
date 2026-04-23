@@ -2,14 +2,14 @@
 
 Comprehensive documentation for **Pi** — a minimal, extensible, terminal-based AI coding agent and supporting library ecosystem.
 
-- **Current release:** v0.66.1 (2026-04-08)
+- **Current release:** v0.69.0 (2026-04-22)
 - **Author:** Mario Zechner ([@badlogic](https://github.com/badlogic))
 - **Package:** [`@mariozechner/pi-coding-agent`](https://www.npmjs.com/package/@mariozechner/pi-coding-agent) on npm
 - **Source:** [github.com/badlogic/pi-mono](https://github.com/badlogic/pi-mono)
 - **Website:** [pi.dev](https://pi.dev) / [shittycodingagent.ai](https://shittycodingagent.ai)
 - **Discord:** [discord.com/invite/3cU7Bz4UPx](https://discord.com/invite/3cU7Bz4UPx)
 
-> This documentation covers all released versions (v0.0.1 through v0.66.1). All content is fact-checked against source code, deepwiki documentation, and online sources.
+> This documentation covers all released versions (v0.0.1 through v0.69.0). All content is fact-checked against source code, deepwiki documentation, and online sources.
 
 ---
 
@@ -26,14 +26,14 @@ Pi's core is deliberately minimal — under 1,000 tokens of system prompt, only 
 | # | Document | Description |
 |---|----------|-------------|
 | 01 | [Architecture Overview](01-architecture-overview.md) | Monorepo structure, three-tier dependency hierarchy, build system, lockstep versioning, release process, contributing guidelines |
-| 02 | [Pi-AI: LLM Abstraction](02-pi-ai-llm-abstraction.md) | 23 providers, API identifiers, streaming entry points, ThinkingLevel mappings, OAuth, model catalog, cost tracking, TypeBox tool validation |
+| 02 | [Pi-AI: LLM Abstraction](02-pi-ai-llm-abstraction.md) | 24 providers, API identifiers, streaming entry points, ThinkingLevel mappings, OAuth, model catalog, cost tracking, TypeBox tool validation |
 | 03 | [Pi-Agent-Core](03-pi-agent-core.md) | Agent class API, loop execution model, tool pipeline (parallel by default), 10 event types, transport abstraction, low-level API |
 | 04 | [Pi-Coding-Agent](04-pi-coding-agent.md) | CLI modes (interactive/print/RPC/SDK), AgentSession, 7 built-in tools, JSONL sessions, compaction, settings, 18 slash commands |
 | 05 | [Pi-TUI: Terminal UI](05-pi-tui-terminal-ui.md) | 13 components, Kitty keyboard protocol, differential rendering, autocomplete, fuzzy matching, overlay system |
 | 06 | [Application Packages](06-application-packages.md) | pi-web-ui (ChatPanel, browser), pi-mom (Slack bot, sandbox), pi-pods (GPU management, vLLM) |
 | 07 | [Extension System](07-extension-system.md) | Factory pattern, jiti loading, ExtensionAPI, hooks, UI integration, custom providers, example extensions |
 | 08 | [Sessions & Persistence](08-sessions-and-persistence.md) | JSONL tree structure, branching, compaction, settings management, model resolution, migration |
-| 09 | [Version History](09-version-history.md) | All 243 releases in 7 eras, breaking changes, feature milestones |
+| 09 | [Version History](09-version-history.md) | All 255 releases in 7 eras, breaking changes, feature milestones |
 | 10 | [Fact-Check Report](10-fact-check-report.md) | Online verification: npm (306 dependents), GitHub (33.8k stars), domains, Discord, author |
 
 ## Supplementary Reference
@@ -67,12 +67,12 @@ Previously generated reference docs covering v0.58.4:
 
 ---
 
-## Packages (v0.66.1)
+## Packages (v0.69.0)
 
 | Package | Description |
 |---------|-------------|
 | **[@mariozechner/pi-coding-agent](04-pi-coding-agent.md)** | Interactive coding agent CLI (`pi` binary) |
-| **[@mariozechner/pi-ai](02-pi-ai-llm-abstraction.md)** | Unified multi-provider LLM API (23+ providers) |
+| **[@mariozechner/pi-ai](02-pi-ai-llm-abstraction.md)** | Unified multi-provider LLM API (24+ providers) |
 | **[@mariozechner/pi-agent-core](03-pi-agent-core.md)** | Agent runtime with tool calling and state management |
 | **[@mariozechner/pi-tui](05-pi-tui-terminal-ui.md)** | Terminal UI library with differential rendering |
 | **[@mariozechner/pi-web-ui](06-application-packages.md)** | Web components for AI chat interfaces |
@@ -85,7 +85,7 @@ Previously generated reference docs covering v0.58.4:
 
 | Feature | Details |
 |---------|---------|
-| **Providers** | 23+ LLM providers, 100+ models (tool-calling only) |
+| **Providers** | 24+ LLM providers, 100+ models (tool-calling only) |
 | **System prompt** | Under 1,000 tokens |
 | **Built-in tools** | 7: `read`, `write`, `edit`, `bash`, `grep`, `find`, `ls` |
 | **Extensions** | TypeScript extensions with full API access via jiti |
@@ -101,12 +101,12 @@ Previously generated reference docs covering v0.58.4:
 
 - **Total documentation:** ~20,000+ lines across 28 files
 - **Source files reviewed:** 170+ TypeScript files across 7 packages
-- **Providers documented:** 23+ with API identifiers
-- **Releases covered:** 243 versions (v0.0.1 → v0.66.1)
+- **Providers documented:** 24+ with API identifiers
+- **Releases covered:** 255 versions (v0.0.1 → v0.69.0)
 - **Online verifications:** npm, GitHub, 3 domains, Discord, author confirmed
 - **Community:** 33.8k GitHub stars, 3.8k forks
 
 ---
 
-Generated on 2026-04-10 from pi-mono source code at commit `main` (v0.66.1).
+Generated on 2026-04-23 from pi-mono source code at commit `main` (v0.69.0).
 Cross-referenced with [deepwiki.com/badlogic/pi-mono](https://deepwiki.com/badlogic/pi-mono).

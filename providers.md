@@ -1,6 +1,6 @@
 # LLM Providers
 
-Pi includes 23+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog. (Updated for v0.66.1.)
+Pi includes 24+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog. (Updated for v0.69.0.)
 
 ---
 
@@ -30,6 +30,16 @@ Pi includes 23+ LLM providers with 100+ models. Only models supporting tool call
 | `opencode-go` | `OPENCODE_API_KEY` | OpenCode Go |
 | `kimi-coding` | `KIMI_API_KEY` | Moonshot AI (Anthropic-compatible) |
 | `zai` | `ZAI_API_KEY` | z.ai GLM-5 |
+
+---
+
+## Fireworks
+
+**Auth:** Set `FIREWORKS_API_KEY` environment variable  
+**API:** Anthropic-compatible Messages API  
+**Added:** v0.68.1  
+
+Fireworks models are sourced from models.dev. Select a Fireworks model via `--model` or `/model`.
 
 ---
 
@@ -187,6 +197,14 @@ AWS_BEDROCK_FORCE_HTTP1=1 pi   # Force HTTP/1.1
 ```
 
 Supports prompt caching for Claude models on Bedrock (v0.58.1+).
+
+### Bearer-Token Authentication (v0.67.67)
+
+Set `AWS_BEARER_TOKEN_BEDROCK` to authenticate without local SigV4 credentials:
+```bash
+export AWS_BEARER_TOKEN_BEDROCK=your-token
+```
+Useful for GovCloud access and token-based Bedrock access.
 
 ---
 

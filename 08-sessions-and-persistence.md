@@ -169,6 +169,17 @@ createBranchedSession(leafId: string): string | undefined
 
 This is triggered by the `/fork` command or `ctx.fork(entryId)` in extensions.
 
+### `/clone` vs `/fork` (v0.68.0)
+
+| Command | Behavior |
+|---------|----------|
+| `/fork` | Branches from a **previous user message** in the conversation tree |
+| `/clone` | Duplicates the **current active branch** into a new session at the same point |
+
+Extensions can control fork position via `ctx.fork(entry, { position: "before" | "at" })`:
+- `"before"` — fork point before the specified entry
+- `"at"` — fork at the specified entry (default behavior)
+
 ### Cross-project Fork
 
 `SessionManager.forkFrom()` creates a new session in a different project directory with the full history from a source session. The header's `cwd` is updated to the target directory.
@@ -325,9 +336,26 @@ interface BranchSummarySettings {
 
 ## Settings Management
 
+### Session Shutdown Reasons (v0.68.0)
+
+The `session_shutdown` event reports why a session is ending:
+
+| Reason | Trigger |
+|--------|---------|
+| `"quit"` | User pressed Ctrl+C or /quit |
+| `"reload"` | Extension or config reload |
+| `"new_session"` | `ctx.newSession()` called |
+| `"resume"` | Session replaced by /resume |
+| `"fork"` | ctx.fork(), /fork, or /clone operation |
+
+`targetSessionFile` is set for `"fork"` and `"new_session"` to indicate the replacement session path.
+
 ### SettingsManager
 
 The `SettingsManager` handles global and project-scoped settings with automatic persistence.
+
+> **Fix (v0.68.1):** `sessionDir` in `settings.json` now expands `~`, so paths like
+> `~/my-sessions` work without shell wrapper scripts.
 
 > **Removed in v0.65.0:** The `session_directory` configuration key has been removed from both the extension API and the settings API. Extensions and SDK users that previously depended on it should use `sessionManager.getSessionFile()` to derive the session location, then call `path.dirname()` to get the containing directory.
 
