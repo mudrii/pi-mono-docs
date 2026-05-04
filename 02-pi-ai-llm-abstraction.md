@@ -1,6 +1,6 @@
 # pi-ai: Unified LLM Abstraction Layer
 
-`@mariozechner/pi-ai` (v0.69.0) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 24 providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
+`@mariozechner/pi-ai` (v0.72.1) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 26+ providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
 
 Only models that support tool calling (function calling) are included in the catalog, since tool use is essential for the agentic workflows that the coding-agent package builds on top of.
 
@@ -58,7 +58,6 @@ type KnownApi =
   | "azure-openai-responses"
   | "anthropic-messages"
   | "google-generative-ai"
-  | "google-gemini-cli"
   | "google-vertex"
   | "mistral-conversations"
   | "bedrock-converse-stream";
@@ -245,7 +244,6 @@ openai-codex-responses    -> openai-codex-responses.ts
 azure-openai-responses    -> azure-openai-responses.ts
 mistral-conversations     -> mistral.ts
 google-generative-ai      -> google.ts
-google-gemini-cli         -> google-gemini-cli.ts
 google-vertex             -> google-vertex.ts
 bedrock-converse-stream   -> amazon-bedrock.ts
 ```
@@ -256,7 +254,7 @@ External code can register additional APIs via `registerApiProvider()`, unregist
 
 ## All Supported Providers
 
-The model catalog (`models.generated.ts`) defines 24 providers. Each maps to one of the 10 wire-protocol APIs:
+The model catalog (`models.generated.ts`) defines 26+ providers. Each maps to one of the 10 wire-protocol APIs:
 
 | Provider | API Identifier | Auth |
 |----------|---------------|------|
@@ -264,11 +262,12 @@ The model catalog (`models.generated.ts`) defines 24 providers. Each maps to one
 | `anthropic` | `anthropic-messages` | `ANTHROPIC_API_KEY` or `ANTHROPIC_OAUTH_TOKEN` or OAuth |
 | `azure-openai-responses` | `azure-openai-responses` | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_BASE_URL` or `AZURE_OPENAI_RESOURCE_NAME` |
 | `cerebras` | `openai-completions` | `CEREBRAS_API_KEY` |
+| `cloudflare-workers-ai` | `openai-completions` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` — OpenAI-compatible streaming (v0.70.6) |
+| `cloudflare` | `openai-completions` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_GATEWAY_ID` — Cloudflare AI Gateway; routes OpenAI, Anthropic, Workers AI (v0.71.0) |
+| `deepseek` | `openai-completions` | `DEEPSEEK_API_KEY` — V4 Flash, V4 Pro; `xhigh` maps to DeepSeek `max` reasoning effort (v0.70.1) |
 | `fireworks` | `anthropic-messages` | `FIREWORKS_API_KEY` — Anthropic-compatible Messages API (added v0.68.1) |
 | `github-copilot` | `anthropic-messages` / `openai-responses` | OAuth (`COPILOT_GITHUB_TOKEN` / `GH_TOKEN` / `GITHUB_TOKEN`) |
 | `google` | `google-generative-ai` | `GEMINI_API_KEY` |
-| `google-antigravity` | `google-generative-ai` | OAuth |
-| `google-gemini-cli` | `google-gemini-cli` | OAuth |
 | `google-vertex` | `google-vertex` | `GOOGLE_CLOUD_API_KEY` or ADC |
 | `groq` | `openai-completions` | `GROQ_API_KEY` |
 | `huggingface` | `openai-completions` | `HF_TOKEN` |
@@ -276,6 +275,7 @@ The model catalog (`models.generated.ts`) defines 24 providers. Each maps to one
 | `minimax` | `openai-completions` | `MINIMAX_API_KEY` — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (older direct IDs removed in v0.63.0) |
 | `minimax-cn` | `openai-completions` | `MINIMAX_CN_API_KEY` — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (older direct IDs removed in v0.63.0) |
 | `mistral` | `mistral-conversations` | `MISTRAL_API_KEY` |
+| `moonshot` | `openai-completions` | `MOONSHOT_API_KEY` — Moonshot AI; OpenAI-compatible (v0.71.0) |
 | `openai` | `openai-responses` | `OPENAI_API_KEY` |
 | `openai-codex` | `openai-codex-responses` | OAuth |
 | `opencode` | `openai-completions` | `OPENCODE_API_KEY` |
@@ -283,12 +283,24 @@ The model catalog (`models.generated.ts`) defines 24 providers. Each maps to one
 | `openrouter` | `openai-completions` | `OPENROUTER_API_KEY` |
 | `vercel-ai-gateway` | `openai-completions` | `AI_GATEWAY_API_KEY` |
 | `xai` | `openai-completions` | `XAI_API_KEY` |
+| `xiaomi` | `anthropic-messages` | `XIAOMI_API_KEY` — Xiaomi MiMo; Anthropic-compatible; default model `mimo-v2.5-pro`; billing at platform.xiaomimimo.com (v0.72.0) |
 | `zai` | `openai-completions` | `ZAI_API_KEY` |
 
 Additionally, any OpenAI-compatible API (Ollama, vLLM, LM Studio, SGLang) can be used by constructing a custom `Model<"openai-completions">` object.
 
 ### Provider Changelog Notes
 
+- **v0.70.0:** Added `findEnvKeys()` function — identifies configured provider API-key environment variables without exposing credential values (see [Environment Variable Detection](#environment-variable-detection)).
+- **v0.70.1:** Added `deepseek` provider — built-in OpenAI-compatible provider with V4 Flash and V4 Pro models. `xhigh` thinking level maps to DeepSeek `max` reasoning effort.
+- **v0.70.6:** Added `cloudflare-workers-ai` provider — built-in OpenAI-compatible streaming provider.
+- **v0.71.0 (breaking):** Removed `google-gemini-cli` and `google-antigravity` providers from the codebase entirely.
+- **v0.71.0:** Added `cloudflare` provider (Cloudflare AI Gateway) — routes requests to OpenAI, Anthropic, and Workers AI through the Cloudflare gateway.
+- **v0.71.0:** Added `moonshot` provider — Moonshot AI, OpenAI-compatible with default model resolution and `/login` display.
+- **v0.71.0:** Added `mistral-medium-3-5` model to the `mistral` provider.
+- **v0.71.0:** `AssistantMessage.responseModel` added to the `openai-completions` path — surfaces the concrete `chunk.model` when it differs from the requested ID (e.g., OpenRouter `auto` → resolved model).
+- **v0.72.0 (breaking):** `reasoningEffortMap` in `OpenAICompletionsCompat.compat` replaced by top-level `Model.thinkingLevelMap`. See [thinkingLevelMap Migration](#thinkinglevelmap-migration-v0720).
+- **v0.72.0 (breaking):** `supportsXhigh()` removed. Use `getSupportedThinkingLevels(model)` or `clampThinkingLevel(model, level)` instead.
+- **v0.72.0:** Added `xiaomi` provider — Xiaomi MiMo, Anthropic-compatible, default model `mimo-v2.5-pro`, API billing endpoint at platform.xiaomimimo.com. (Breaking: switched from Token Plan AMS to API billing endpoint.)
 - **v0.61.0:** Added `gpt-5.4-mini` model for the `openai-codex` provider.
 - **v0.62.0:** Added `BedrockOptions.requestMetadata` for AWS cost allocation tagging.
 - **v0.63.0 (breaking):** Removed deprecated `minimax` and `minimax-cn` direct model IDs. Use `MiniMax-M2.7` or `MiniMax-M2.7-highspeed`.
@@ -428,15 +440,25 @@ For Gemini 3 models, ThinkingLevel maps to Google's native `ThinkingLevel` enum 
 
 `xhigh` is always clamped to `"high"` on non-OpenAI providers (except Opus 4.6 on Anthropic).
 
-### supportsXhigh()
+### supportsXhigh() — Removed in v0.72.0
 
-The `supportsXhigh()` function in `src/models.ts` checks whether a model supports the `xhigh` level:
+`supportsXhigh()` was removed in v0.72.0. Use the replacement functions instead:
 
 ```typescript
-function supportsXhigh<TApi extends Api>(model: Model<TApi>): boolean
+// Before (removed in v0.72.0)
+if (supportsXhigh(model)) { ... }
+
+// After
+import { getSupportedThinkingLevels, clampThinkingLevel } from "@mariozechner/pi-ai";
+
+// Check whether a model supports xhigh
+if (getSupportedThinkingLevels(model).includes("xhigh")) { ... }
+
+// Or clamp a requested level to what the model actually supports
+const effective = clampThinkingLevel(model, "xhigh"); // returns "high" if xhigh unsupported
 ```
 
-Returns `true` for GPT-5.2/5.3/5.4 and Opus 4.6 models.
+`getSupportedThinkingLevels(model)` returns the array of `ThinkingLevel` values the model supports. `clampThinkingLevel(model, requestedLevel)` returns the highest supported level that does not exceed the requested one.
 
 ---
 
@@ -451,8 +473,6 @@ OAuth authentication is handled by the `@mariozechner/pi-ai/oauth` entry point (
 | `anthropic` | Anthropic (Claude Pro/Max) | OAuth with bearer token (`sk-ant-oat*`) |
 | `openai-codex` | OpenAI Codex (ChatGPT Plus/Pro) | ChatGPT OAuth |
 | `github-copilot` | GitHub Copilot | Device code flow |
-| `google-gemini-cli` | Google Gemini CLI | Google Cloud OAuth |
-| `google-antigravity` | Antigravity | Google Cloud OAuth |
 
 ### API Surface
 
@@ -461,8 +481,6 @@ OAuth authentication is handled by the `@mariozechner/pi-ai/oauth` entry point (
 loginAnthropic(callbacks)
 loginOpenAICodex(callbacks)
 loginGitHubCopilot(callbacks)
-loginGeminiCli(callbacks)
-loginAntigravity(callbacks)
 
 // Token management
 refreshOAuthToken(providerId, credentials)  // -> OAuthCredentials
@@ -724,6 +742,34 @@ interface OpenAICompletionsCompat {
 
 If `compat` is not set, the library auto-detects settings from the `baseUrl`. Partial overrides are merged with auto-detected defaults.
 
+### thinkingLevelMap Migration (v0.72.0)
+
+**Breaking change:** The `reasoningEffortMap` field inside `OpenAICompletionsCompat.compat` was replaced by a top-level `Model.thinkingLevelMap` field.
+
+**Before (removed in v0.72.0):**
+```typescript
+{
+  compat: {
+    reasoningEffortMap: { high: "high", xhigh: "max" }
+  }
+}
+```
+
+**After (v0.72.0+):**
+```typescript
+{
+  thinkingLevelMap: {
+    minimal: null,   // null = level unsupported by this model
+    low: null,
+    medium: null,
+    high: "high",
+    xhigh: "max",
+  }
+}
+```
+
+`null` values indicate an unsupported thinking level. The library uses `thinkingLevelMap` to drive both `getSupportedThinkingLevels()` and `clampThinkingLevel()`. Update any custom model definitions that previously set `compat.reasoningEffortMap`.
+
 ---
 
 ## Cross-Provider Handoffs
@@ -841,6 +887,16 @@ Add the provider to:
   - **Amazon Bedrock**: checks 6 different AWS credential sources (profile, IAM keys, bearer token, ECS roles, IRSA)
 - All other providers use a simple key-value map (e.g., `openai` -> `OPENAI_API_KEY`)
 
+### findEnvKeys() (v0.70.0+)
+
+`findEnvKeys()` identifies which provider API-key environment variables are currently set in the process environment, without exposing the credential values themselves:
+
+```typescript
+function findEnvKeys(): string[]
+```
+
+Returns an array of environment variable names (e.g., `["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]`) that are both registered as provider auth keys and present in `process.env`. Useful for displaying which providers are configured to the user without leaking secrets.
+
 ---
 
 ## ModelRegistry Breaking Changes
@@ -898,7 +954,7 @@ All faux helpers are exported from the package root via `export * from "./provid
 ## Package Metadata
 
 - **Package name**: `@mariozechner/pi-ai`
-- **Version**: 0.69.0
+- **Version**: 0.72.1
 - **License**: MIT
 - **Author**: Mario Zechner
 - **Repository**: `github.com/badlogic/pi-mono` (directory: `packages/ai`)

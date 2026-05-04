@@ -293,6 +293,7 @@ AWS_PROFILE=...                    # AWS profile
 
 ```bash
 PI_CODING_AGENT_DIR=~/.pi/agent    # Override agent directory
+PI_CODING_AGENT_SESSION_DIR=/path/to/sessions  # Override session storage directory (v0.71.0)
 PI_OFFLINE=1                        # Disable startup network ops
 PI_CACHE_RETENTION=long            # Extended prompt caching
 PI_PACKAGE_DIR=/path               # For Nix/Guix environments
@@ -302,6 +303,13 @@ PI_DEBUG_REDRAW=1                  # Log redraw triggers
 PI_HARDWARE_CURSOR=1               # Enable hardware cursor
 PI_CLEAR_ON_SHRINK=1               # Clear on content shrink
 PI_OAUTH_CALLBACK_HOST=0.0.0.0    # Custom OAuth callback bind address (v0.68.0)
+```
+
+### `PI_CODING_AGENT_SESSION_DIR` (v0.71.0)
+Set the session storage directory. Equivalent to the `--session-dir` CLI flag.
+
+```bash
+PI_CODING_AGENT_SESSION_DIR=/path/to/sessions pi
 ```
 
 ### `PI_OAUTH_CALLBACK_HOST` (v0.68.0)

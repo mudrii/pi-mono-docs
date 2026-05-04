@@ -1,6 +1,6 @@
 # LLM Providers
 
-Pi includes 24+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog. (Updated for v0.69.0.)
+Pi includes 26+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog. (Updated for v0.72.1.)
 
 ---
 
@@ -14,8 +14,6 @@ Pi includes 24+ LLM providers with 100+ models. Only models supporting tool call
 | `azure-openai-responses` | Azure credentials | Azure OpenAI Responses API |
 | `google` | `GEMINI_API_KEY` | Gemini 3.x |
 | `google-vertex` | ADC or `GOOGLE_CLOUD_API_KEY` | Vertex AI; includes `gemini-3.1-pro-preview-customtools` (v0.63.1) |
-| `google-gemini-cli` | OAuth | Gemini CLI; 1M context |
-| `google-antigravity` | Internal OAuth | Claude Sonnet/Opus 4.6 Thinking |
 | `github-copilot` | OAuth device code | Claude 4.x via Anthropic Messages API |
 | `amazon-bedrock` | `AWS_ACCESS_KEY_ID` / `AWS_PROFILE` | Bedrock Converse Stream |
 | `openrouter` | `OPENROUTER_API_KEY` | 100+ models; `openrouter:auto` alias |
@@ -30,6 +28,11 @@ Pi includes 24+ LLM providers with 100+ models. Only models supporting tool call
 | `opencode-go` | `OPENCODE_API_KEY` | OpenCode Go |
 | `kimi-coding` | `KIMI_API_KEY` | Moonshot AI (Anthropic-compatible) |
 | `zai` | `ZAI_API_KEY` | z.ai GLM-5 |
+| `deepseek` | `DEEPSEEK_API_KEY` | OpenAI-compatible; V4 Flash, V4 Pro; `xhigh` thinking maps to DeepSeek `max` reasoning effort (v0.70.1) |
+| `cloudflare-workers-ai` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` | Built-in OpenAI-compatible streaming (v0.70.6) |
+| `cloudflare` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_GATEWAY_ID` | Cloudflare AI Gateway; routes OpenAI, Anthropic, Workers AI (v0.71.0) |
+| `moonshot` | `MOONSHOT_API_KEY` | Moonshot AI; OpenAI-compatible (v0.71.0) |
+| `xiaomi` | `XIAOMI_API_KEY` | Xiaomi MiMo; Anthropic-compatible; default model `mimo-v2.5-pro`; API billing at platform.xiaomimimo.com (v0.72.0) |
 
 ---
 
@@ -77,7 +80,7 @@ pi
 /login
 ```
 
-Select from: Anthropic (Claude Pro/Max), GitHub Copilot, Google Gemini CLI, Google Antigravity, OpenAI Codex.
+Select from: Anthropic (Claude Pro/Max), GitHub Copilot, OpenAI Codex.
 
 ---
 
@@ -281,9 +284,10 @@ See examples in `packages/coding-agent/examples/extensions/`.
 ## Transport Options
 
 ```json
-{ "transport": "sse" }       // Force Server-Sent Events
-{ "transport": "websocket" } // Force WebSocket
-{ "transport": "auto" }      // Let provider decide (default)
+{ "transport": "sse" }                // Force Server-Sent Events
+{ "transport": "websocket" }          // Force WebSocket
+{ "transport": "websocket-cached" }   // Use cached WebSocket session (keeps same connection open for a session, sends only new items after the first request)
+{ "transport": "auto" }               // Let provider decide (default)
 ```
 
 OpenAI Codex uses WebSocket by default.

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Pi-Mono uses **lockstep versioning** across all packages. Every release bumps all six packages to the same version number simultaneously, even if a particular package has no changes in that release. This means `@mariozechner/pi-coding-agent`, `@mariozechner/pi-ai`, `@mariozechner/pi-tui`, `@mariozechner/pi-agent-core` (formerly `@mariozechner/pi-agent`), `@mariozechner/pi-mom`, and `@mariozechner/pi-web-ui` always share the same version.
+Pi-Mono uses **lockstep versioning** across all packages. Every release bumps all packages to the same version number simultaneously, even if a particular package has no changes in that release. This means `@mariozechner/pi-coding-agent`, `@mariozechner/pi-ai`, `@mariozechner/pi-tui`, `@mariozechner/pi-agent-core` (formerly `@mariozechner/pi-agent`), and `@mariozechner/pi-web-ui` always share the same version. (`@mariozechner/pi-mom` and `@mariozechner/pi-pods` were removed from the monorepo before v0.70.0.)
 
-As of 2026-04-23, the project has **255 release tags** spanning from `v0.0.1` to `v0.69.0`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.69.0) on 2026-04-22 -- roughly 5 months of rapid development.
+As of 2026-05-02, the project has **267 release tags** spanning from `v0.0.1` to `v0.72.1`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.72.1) on 2026-05-02 -- roughly 5 months of rapid development.
 
 ---
 
@@ -489,6 +489,184 @@ This era focused on SDK ergonomics, API hardening, and reliability fixes. It int
 
 ---
 
+## Era 8: Consolidation & Provider Expansion (v0.70.0 – v0.72.1, 2026-04-23 to 2026-05-02)
+
+This era removed `pi-mom` and `pi-pods` from the monorepo (now 5 active packages: `pi-ai`, `pi-agent-core`, `pi-coding-agent`, `pi-tui`, `pi-web-ui`), added six new built-in providers (DeepSeek, Cloudflare Workers AI, Cloudflare AI Gateway, Moonshot AI, Xiaomi MiMo, plus WebSocket-cached transport for OpenAI Codex), introduced the `Model.thinkingLevelMap` API replacing ad-hoc `supportsXhigh()` checks, and cleaned up two deprecated OAuth providers (Google Gemini CLI, Google Antigravity).
+
+### v0.70.0 (2026-04-23)
+
+**pi-ai — Added:**
+- GPT-5.5 to OpenAI Codex model generation
+- `findEnvKeys()` to identify configured provider API-key env vars without exposing values
+
+**pi-ai — Fixed:**
+- `google-vertex` now forwards custom `model.baseUrl` to `@google/genai` (enables Vertex proxy/gateway)
+- OpenAI-compatible completion usage parsing (no more double-counting reasoning tokens)
+- Long cache retention compatibility via `compat.supportsLongCacheRetention`
+- `openai-responses` with `compat.sendSessionIdHeader: false` for strict proxies
+- Anthropic-messages tool streaming with `compat.supportsEagerToolInputStreaming`
+- `openai-completions` streamed tool-call assembly now coalesces deltas by stable tool index (fixes Kimi K2.6/OpenCode malformed streams)
+
+### v0.70.1 (2026-04-24)
+
+**pi-ai — Added:**
+- DeepSeek as built-in OpenAI-compatible provider: V4 Flash and V4 Pro models, `DEEPSEEK_API_KEY` auth
+
+**pi-ai — Fixed:**
+- DeepSeek V4 session replay 400 errors (`thinkingFormat`, `requiresReasoningContentOnAssistantMessages`)
+- GPT-5.5 context window metadata (272k observed limit)
+- Provider request controls: exposed `timeoutMs` and `maxRetries` in stream options
+
+### v0.70.2 (2026-04-24)
+
+**pi-ai — Fixed:**
+- OpenAI/Azure/Anthropic provider request option forwarding to omit undefined `timeout`/`maxRetries`
+
+### v0.70.3 (2026-04-27)
+
+**pi-ai — Added:**
+- Azure Cognitive Services endpoint support for Azure OpenAI Responses base URLs
+
+**pi-ai — Changed:**
+- OpenAI Codex Responses default text verbosity to `low`
+
+**pi-ai — Fixed:**
+- API-key environment discovery falls back to `/proc/self/environ` in Bun sandbox
+- Bedrock prompt-caching and adaptive-thinking capability checks for inference profile ARNs
+- Anthropic SSE parsing now ignores unknown proxy events
+- Empty tools array no longer sent when no tools are active (fixes DashScope/Aliyun Qwen 400 error)
+- `supportsXhigh()` for DeepSeek V4 Pro
+
+### v0.70.4 (2026-04-27)
+
+**pi-coding-agent — Fixed:**
+- Packaged `pi` startup failing (session selector imported source-only utility path)
+
+### v0.70.5 (2026-04-27)
+
+**pi-coding-agent — Fixed:**
+- HTML export ANSI-renderer trailing padding
+
+### v0.70.6 (2026-04-28)
+
+**pi-ai — Added:**
+- Cloudflare Workers AI as built-in provider: `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID`, OpenAI-compatible streaming
+
+**pi-ai — Fixed:**
+- Cloudflare Workers AI attribution headers honor telemetry setting
+- Bedrock inference profile capability checks
+
+**pi-coding-agent — Added:**
+- Pi update checks now use `pi.dev` and `pi/<version>` user agent
+
+**pi-coding-agent — Fixed:**
+- Config selector scroll indicators (show item counts not line counts)
+- Exported HTML XSS: escapes embedded image data and session metadata
+- Bun package manager startup (global node_modules relative to Bun install layout)
+- File discovery: falls back to `fdfind` when `fd` unavailable
+- `pi update` skips reinstalls when already current
+- `pi update --self` for Windows package-manager shim installs
+
+### v0.71.0 (2026-04-30) — BREAKING CHANGES
+
+**pi-ai — Removed (Breaking):**
+- `google-gemini-cli` and `google-antigravity` providers, models, OAuth, and all exports completely removed
+
+**pi-ai — Added:**
+- Cloudflare AI Gateway as built-in provider: OpenAI/Anthropic/Workers AI gateway routing, `CLOUDFLARE_API_KEY`/`CLOUDFLARE_ACCOUNT_ID`/`CLOUDFLARE_GATEWAY_ID` auth
+- Moonshot AI as built-in OpenAI-compatible provider: `MOONSHOT_API_KEY`
+- Mistral Medium 3.5 model metadata and reasoning-mode handling
+- `AssistantMessage.responseModel` on the `openai-completions` path (surfaces concrete routed model, e.g. OpenRouter auto → `anthropic/...`)
+
+**pi-ai — Fixed:**
+- Google Vertex Gemini 3 unsigned tool call replay
+- DeepSeek V4 Flash xhigh thinking (maps to DeepSeek `max` effort)
+- Anthropic streams ending before `message_stop` now treated as errors
+- DeepSeek prompt cache tracking from OpenAI-compatible usage responses
+- Updated `@anthropic-ai/sdk` to `^0.91.1` (clears GHSA-p7fg-763f-g4gf audit finding)
+
+**pi-coding-agent — Removed (Breaking):**
+- Google Gemini CLI and Antigravity built-in login, default model, documentation, and example support removed
+
+**pi-coding-agent — Added:**
+- Cloudflare AI Gateway: default model resolution, `/login` display
+- Moonshot AI: default model resolution, `/login` display
+- `PI_CODING_AGENT_SESSION_DIR` env var (equivalent to `--session-dir`)
+- `message_end` extension result support for replacing finalized messages (e.g., override assistant usage cost)
+- Top-level `name` to `pi.registerProvider()` for friendly `/login` display
+- `ctx.ui.getEditorComponent()` so extensions can wrap the custom editor factory
+- `thinking_level_select` extension event for observing thinking level changes
+
+**pi-coding-agent — Fixed:**
+- WSL clipboard image paste (PowerShell save path fix)
+- Blocked `edit` tool results showing rejection reason twice
+- Extension thinking level refresh of interactive editor border
+- `grep` and `find` tool argument injection for flag-like search patterns
+- PowerShell Windows shell output (only detach processes on Unix)
+- Bun package manager node_modules discovery
+- Edit access failures now report filesystem errors correctly
+- `ProcessTerminal` sizing uses `COLUMNS`/`LINES` env vars before fallback
+- Project context discovery loads `AGENTS.MD` (uppercase) in addition to `AGENTS.md`
+- `/handoff` now uses compacted session context
+- Idle follow-up submission editor clear
+- Editor rendering for Thai Sara Am and Lao AM vowel characters
+
+**pi-coding-agent — Removed:**
+- Discontinued Qwen CLI OAuth custom provider extension example removed
+
+**pi-mom and pi-pods:** Removed from monorepo (same batch of commits as v0.71.0)
+
+### v0.71.1 (2026-05-01)
+
+**pi-ai — Added:**
+- `websocket-cached` transport for OpenAI Codex Responses (ChatGPT subscription auth): keeps the same WebSocket open per session, sends only new conversation items after the first request
+
+**pi-coding-agent — Added:**
+- `websocket-cached` as transport setting option for the OpenAI Codex provider
+
+### v0.72.0 (2026-05-01) — BREAKING CHANGES
+
+**pi-ai — Breaking:**
+- Replaced `OpenAICompletionsCompat.reasoningEffortMap` with top-level `Model.thinkingLevelMap`
+  - Before: `compat: { reasoningEffortMap: { high: "high", xhigh: "max" } }`
+  - After: `thinkingLevelMap: { minimal: null, low: null, medium: null, high: "high", xhigh: "max" }` (`null` = unsupported)
+  - Migration: move mappings from `model.compat.reasoningEffortMap` to `model.thinkingLevelMap`
+- Removed `supportsXhigh()` — use `getSupportedThinkingLevels(model).includes("xhigh")` or `clampThinkingLevel(model, requestedLevel)` instead
+
+**pi-ai — Added:**
+- Xiaomi MiMo Token Plan provider (Anthropic-compatible): `XIAOMI_API_KEY` (API billing from platform.xiaomimimo.com), default model `mimo-v2.5-pro`
+- `Model.thinkingLevelMap`, `getSupportedThinkingLevels()`, `clampThinkingLevel()` API
+
+**pi-ai — Fixed:**
+- OpenAI Codex Responses `streamSimple()` now honors configured transport (not always SSE); default now `auto` with cached WebSocket when available
+
+**pi-agent-core — Added:**
+- `shouldStopAfterTurn` to low-level agent loop config for graceful exit after a completed turn
+
+**pi-coding-agent — Added:**
+- Xiaomi MiMo Token Plan provider: `/login` display, default model resolution
+- `shouldStopAfterTurn` callback (inherited from pi-agent-core)
+- `model.thinkingLevelMap` support in `models.json` and `pi.registerProvider()`
+- Custom provider base URL overrides now respected in `pi.registerProvider()`
+
+**pi-coding-agent — Fixed:**
+- Self-update detection
+
+### v0.72.1 (2026-05-02)
+
+**pi-agent-core — Changed:**
+- Default agent transport changed to `auto` (was previously SSE)
+
+**pi-ai — Fixed:**
+- OpenAI Codex transport option now honored correctly
+- Updated generated models catalog
+
+**pi-coding-agent — Fixed:**
+- Compact read rendering: Pi documentation, AGENTS/CLAUDE context files, and SKILL.md contents are collapsed by default in interactive output
+- OpenAI Codex WebSocket sessions no longer kept alive after `--print`/JSON mode processes end
+
+---
+
 ## Version Numbering Pattern
 
 The project uses semantic-ish versioning within the 0.x range:
@@ -518,6 +696,9 @@ The most significant breaking changes occurred at:
 - **v0.65.0**: `AgentState` reshape (field renames, readonly enforcement, accessor properties); all `Agent.setXxx()` mutator methods removed; `session_switch`/`session_fork` extension events removed; `session_directory` removed; unknown single-dash CLI flags now error
 - **v0.68.0**: Tool selection changed from `Tool[]` to `string[]` names; prebuilt tool exports removed; `DefaultResourceLoader`/`loadProjectContextFiles()`/`loadSkills()` require explicit `cwd`; `--no-tools` now disables all tools
 - **v0.69.0**: TypeBox 1.x migration (import from `typebox`, not `@sinclair/typebox`); session-replacement callbacks invalidate pre-switch objects
+- **v0.70.1**: DeepSeek built-in provider added (`DEEPSEEK_API_KEY`)
+- **v0.71.0**: `google-gemini-cli` and `google-antigravity` providers fully removed; `pi-mom` and `pi-pods` removed from monorepo; `reasoningEffortMap` compat field replaced by `Model.thinkingLevelMap`
+- **v0.72.0**: `OpenAICompletionsCompat.reasoningEffortMap` replaced by `Model.thinkingLevelMap`; `supportsXhigh()` removed — use `getSupportedThinkingLevels()`/`clampThinkingLevel()`
 
 ## Notable Model Milestones
 
@@ -538,3 +719,8 @@ The most significant breaking changes occurred at:
 | 2026-04-16 | v0.67.4 | `claude-opus-4-7` added for Anthropic and OpenRouter |
 | 2026-04-22 | v0.68.1 | Fireworks provider added (`FIREWORKS_API_KEY`) |
 | 2026-04-22 | v0.69.0 | `gemini-3.1-flash-lite-preview` added to Cloud Code Assist |
+| 2026-04-24 | v0.70.1 | DeepSeek V4 Flash and V4 Pro built-in provider added |
+| 2026-04-28 | v0.70.6 | Cloudflare Workers AI built-in provider added |
+| 2026-04-30 | v0.71.0 | Cloudflare AI Gateway and Moonshot AI built-in providers added; Google Gemini CLI and Antigravity removed |
+| 2026-05-01 | v0.71.1 | `websocket-cached` transport for OpenAI Codex Responses added |
+| 2026-05-01 | v0.72.0 | Xiaomi MiMo Token Plan provider added; `Model.thinkingLevelMap` API introduced |

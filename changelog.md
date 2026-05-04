@@ -4,6 +4,84 @@ All pi-mono releases follow lockstep versioning — all packages (`pi-ai`, `pi-t
 
 ---
 
+## v0.70.0–v0.72.1 (2026-04-23 to 2026-05-02)
+
+### v0.72.1 — 2026-05-02
+- `agent`: Changed default transport to `auto` so providers use their best available transport
+- `ai`: Fixed OpenAI Codex transport option being ignored (always used SSE)
+- `ai`: Updated generated models catalog
+- `coding-agent`: Fixed compact read rendering — Pi docs, AGENTS/CLAUDE context files, and SKILL.md collapsed by default in interactive output
+- `coding-agent`: Fixed Codex WebSocket sessions kept alive after `--print` / JSON mode ends
+
+### v0.72.0 — 2026-05-01 *(Breaking)*
+- **Breaking** `ai`: Replaced `compat.reasoningEffortMap` with top-level `Model.thinkingLevelMap`; removed `supportsXhigh()`, use `getSupportedThinkingLevels()`/`clampThinkingLevel()` instead
+- `ai`: Added Xiaomi MiMo Token Plan provider (`XIAOMI_API_KEY`, `mimo-v2.5-pro` default)
+- `ai`: Added `getSupportedThinkingLevels()` and `clampThinkingLevel()` functions
+- `agent`: Added `shouldStopAfterTurn` callback to agent loop config for graceful post-turn exit
+- `coding-agent`: Added Xiaomi MiMo Token Plan to `/login` and default model resolution
+- `coding-agent`: Fixed custom provider `pi.registerProvider()` to honor per-model `baseUrl` overrides
+- `coding-agent`: Fixed self-update detection
+
+### v0.71.1 — 2026-05-01
+- `ai`: Added `websocket-cached` transport for OpenAI Codex Responses (ChatGPT subscription auth)
+- `coding-agent`: Added `websocket-cached` transport option for OpenAI Codex
+
+### v0.71.0 — 2026-04-30 *(Breaking)*
+- **Breaking** `ai` / `coding-agent`: Removed Google Gemini CLI and Google Antigravity providers completely
+- **Removed** `mom` and `pods` packages from monorepo
+- `ai`: Added Cloudflare AI Gateway provider (`CLOUDFLARE_API_KEY`/`CLOUDFLARE_ACCOUNT_ID`/`CLOUDFLARE_GATEWAY_ID`)
+- `ai`: Added Moonshot AI provider (`MOONSHOT_API_KEY`)
+- `ai`: Added Mistral Medium 3.5 model
+- `ai`: Added `AssistantMessage.responseModel` (exposes routed model on openai-completions path)
+- `ai`: Fixed Google Vertex unsigned tool call replay
+- `ai`: Updated @anthropic-ai/sdk to ^0.91.1 (security: GHSA-p7fg-763f-g4gf)
+- `coding-agent`: Added `PI_CODING_AGENT_SESSION_DIR` env var (equivalent to `--session-dir`)
+- `coding-agent`: Added `message_end` extension result support (replace finalized messages)
+- `coding-agent`: Added `ctx.ui.getEditorComponent()` for extensions
+- `coding-agent`: Added `thinking_level_select` extension event
+- `coding-agent`: Added top-level `name` field to `pi.registerProvider()` for `/login` display
+- `coding-agent`: Fixed WSL clipboard image paste
+- `coding-agent`: Fixed PowerShell Windows stdio (`detached: false` on Windows)
+- `coding-agent`: Fixed `AGENTS.MD` uppercase context file discovery
+- `coding-agent`: Fixed Bun node_modules discovery
+- `coding-agent`: Fixed `/handoff` to use compacted context
+
+### v0.70.6 — 2026-04-28
+- `ai`: Added Cloudflare Workers AI provider (`CLOUDFLARE_API_KEY`/`CLOUDFLARE_ACCOUNT_ID`)
+- `coding-agent`: Pi update checks use `pi.dev` and `pi/<version>` user agent
+- `coding-agent`: Fixed exported HTML XSS (escapes embedded image data and session metadata)
+- `coding-agent`: Fixed Bun startup (global node_modules relative to Bun install layout)
+- `coding-agent`: Fixed `pi update --self` for Windows shim installs
+
+### v0.70.5 — 2026-04-27
+- `coding-agent`: Fixed HTML export ANSI trailing padding
+
+### v0.70.4 — 2026-04-27
+- `coding-agent`: Fixed packaged `pi` startup failure (session selector source import)
+
+### v0.70.3 — 2026-04-27
+- `ai`: Added Azure Cognitive Services endpoint for Azure OpenAI Responses
+- `ai`: Fixed empty tools array sent when no tools active (fixes DashScope/Aliyun Qwen 400)
+- `ai`: Fixed Bedrock inference profile ARN capability checks
+
+### v0.70.2 — 2026-04-24
+- `ai`: Fixed OpenAI/Azure/Anthropic request options forwarding (omit undefined timeout/maxRetries)
+
+### v0.70.1 — 2026-04-24
+- `ai`: Added DeepSeek as built-in provider (V4 Flash, V4 Pro, `DEEPSEEK_API_KEY`)
+- `ai`: Fixed DeepSeek V4 session replay 400 errors (reasoning compat)
+- `ai`: Fixed GPT-5.5 context window metadata (272k)
+- `ai`: Exposed `timeoutMs` and `maxRetries` in stream options
+
+### v0.70.0 — 2026-04-23
+- `ai`: Added GPT-5.5 to OpenAI Codex model generation
+- `ai`: Added `findEnvKeys()` for identifying configured provider env vars
+- `ai`: Fixed Google Vertex custom `model.baseUrl` forwarding
+- `ai`: Fixed OpenAI-compatible usage parsing (no double-counting reasoning tokens)
+- `ai`: Fixed tool-call coalescing for mutating gateway IDs (fixes Kimi K2.6/OpenCode)
+
+---
+
 ## v0.67.0–v0.69.0 (2026-04-13 to 2026-04-22)
 
 ### Breaking Changes

@@ -1,6 +1,6 @@
 # Pi-Mono Fact-Check Report
 
-Date: 2026-04-23
+Date: 2026-05-04
 
 This report verifies claims about the Pi-Mono project against publicly available online sources.
 
@@ -12,7 +12,7 @@ This report verifies claims about the Pi-Mono project against publicly available
 
 - **Status**: VERIFIED -- Published and actively maintained on npm
 - **URL**: https://www.npmjs.com/package/@mariozechner/pi-coding-agent
-- **Latest version**: 0.69.0 (published 2026-04-22)
+- **Latest version**: 0.72.1 (published 2026-05-02)
 - **Dependents**: 306 other npm projects depend on this package (could not re-verify; npm dependents API returned 403)
 - **Description**: "Coding agent CLI with read, bash, edit, write tools and session management"
 
@@ -24,6 +24,11 @@ This report verifies claims about the Pi-Mono project against publicly available
 | `@mariozechner/pi-ai` | (inferred from code) | Published |
 | `@mariozechner/pi-agent-core` | https://www.npmjs.com/package/@mariozechner/pi-agent-core | Published |
 | `@mariozechner/pi-agent` | https://www.npmjs.com/package/@mariozechner/pi-agent | Published |
+
+### Removed packages
+
+- `@mariozechner/pi-mom` (Slack bot) -- removed from the monorepo and npm in v0.71.0 (April 2026)
+- `@mariozechner/pi-pods` (GPU management CLI) -- removed from the monorepo and npm in v0.71.0 (April 2026)
 
 ### Third-party forks
 
@@ -41,7 +46,7 @@ This report verifies claims about the Pi-Mono project against publicly available
 
 - **Status**: VERIFIED -- Repository exists and is actively maintained
 - **URL**: https://github.com/badlogic/pi-mono
-- **Description**: "AI agent toolkit: coding agent CLI, unified LLM API, TUI & web UI libraries, Slack bot, vLLM pods"
+- **Description**: "AI agent toolkit: coding agent CLI, unified LLM API, TUI & web UI libraries"
 - **Stars**: 33.8k (as of 2026-04-10)
 - **Forks**: 3.8k (as of 2026-04-10)
 - **Open issues**: 21 (as of 2026-04-10)
@@ -200,22 +205,22 @@ All three remain functional. This is consistent with the changelog entries.
 
 | Claim | Status | Notes |
 |-------|--------|-------|
-| npm package `@mariozechner/pi-coding-agent` | VERIFIED | v0.69.0, 306 dependents (npm returned 403 on re-check; count retained from prior verification) |
+| npm package `@mariozechner/pi-coding-agent` | VERIFIED | v0.72.1, 306 dependents (npm returned 403 on re-check; count retained from prior verification) |
 | GitHub repo `badlogic/pi-mono` | VERIFIED | 33.8k stars, 3.8k forks |
 | Website pi.dev | VERIFIED | Redirects from shittycodingagent.ai |
 | Website buildwithpi.ai | VERIFIED | Session viewer, still active |
 | Discord community | VERIFIED | Referenced across multiple sources |
 | Author: Mario Zechner (badlogic) | VERIFIED | libGDX creator, npm @mariozechner scope |
-| 255 release tags | VERIFIED | Counted from local git repo |
+| 267 release tags | VERIFIED | Counted from local git repo |
 | OpenClaw uses Pi SDK | VERIFIED | Multiple sources confirm |
-| 24+ LLM providers supported | VERIFIED | Anthropic, OpenAI, Google, Azure, Bedrock, Mistral, Groq, Cerebras, xAI, HuggingFace, Kimi, MiniMax, OpenRouter, Ollama, Vercel, z.ai, OpenCode, GitHub Copilot, Fireworks |
+| 26+ LLM providers supported | VERIFIED | Anthropic, OpenAI, Google, Azure, Bedrock, Mistral, Groq, Cerebras, xAI, HuggingFace, Kimi, MiniMax, OpenRouter, Ollama, Vercel, z.ai, OpenCode, GitHub Copilot, Fireworks, DeepSeek, Cloudflare AI Gateway, Cloudflare Workers AI, Moonshot AI, Xiaomi MiMo |
 | Arch Linux AUR package | VERIFIED | https://aur.archlinux.org/packages/pi-coding-agent |
 
 ---
 
-## v0.67.0–v0.69.0 Verification (2026-04-23)
+## v0.67.0–v0.72.1 Verification (2026-05-04)
 
-All claims below verified against source code in ~/src/tui/pi-mono at commit main (v0.69.0):
+All claims below verified against source code in ~/src/tui/pi-mono at commit main (v0.72.1):
 
 | Claim | Source File | Status |
 |-------|-------------|--------|
@@ -225,7 +230,7 @@ All claims below verified against source code in ~/src/tui/pi-mono at commit mai
 | terminate: true ends tool batch | packages/coding-agent/CHANGELOG.md v0.69.0, packages/agent/CHANGELOG.md | ✅ VERIFIED |
 | OSC 9;4 progress indicators | packages/coding-agent/CHANGELOG.md v0.69.0, packages/tui/CHANGELOG.md | ✅ VERIFIED |
 | SVG artifacts sandboxed in web-ui | packages/web-ui/CHANGELOG.md v0.69.0 | ✅ VERIFIED |
-| 255 total releases | git tag count (v0.0.1 through v0.69.0) | ✅ VERIFIED |
+| 267 total releases | git tag count (v0.0.1 through v0.72.1) | ✅ VERIFIED |
 | session_shutdown reason field | packages/coding-agent/CHANGELOG.md v0.68.0 | ✅ VERIFIED |
 | Breaking: Tool[] → string[] in v0.68.0 | packages/coding-agent/CHANGELOG.md v0.68.0 | ✅ VERIFIED |
 | /clone command added in v0.68.0 | packages/coding-agent/CHANGELOG.md v0.68.0 | ✅ VERIFIED |

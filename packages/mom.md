@@ -1,3 +1,5 @@
+> **REMOVED (April 2026):** The `pi-mom` package (`@mariozechner/pi-mom`) was removed from the pi-mono monorepo as of April 30, 2026. It is no longer maintained or published. The information below is archived for historical reference only.
+
 # @mariozechner/pi-mom
 
 **Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-mom)

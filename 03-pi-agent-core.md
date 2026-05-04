@@ -1,6 +1,6 @@
 # pi-agent-core (`@mariozechner/pi-agent-core`)
 
-Package: `@mariozechner/pi-agent-core` v0.69.0
+Package: `@mariozechner/pi-agent-core` v0.72.1
 Source: `packages/agent/`
 License: MIT | Node >= 20.0.0
 Dependency: `@mariozechner/pi-ai ^0.69.0`
@@ -39,7 +39,7 @@ The `Agent` class wraps the agent loop with state management, event subscription
 | `getApiKey` | `(provider) => Promise<string \| undefined>` | none | Dynamic API key resolution per call (for expiring OAuth tokens) |
 | `onPayload` | `SimpleStreamOptions["onPayload"]` | none | Inspect or replace provider payloads before sending |
 | `thinkingBudgets` | `ThinkingBudgets` | none | Custom token budgets per thinking level |
-| `transport` | `Transport` | `"sse"` | Preferred transport (`"sse"`, `"websocket"`, `"auto"`) |
+| `transport` | `Transport` | `"auto"` | Preferred transport (`"sse"`, `"websocket"`, `"auto"`); default changed to `"auto"` in v0.72.1, allowing providers to use their best available transport (e.g., WebSocket for Codex) |
 | `maxRetryDelayMs` | `number` | `60000` | Cap on server-requested retry delays; 0 disables |
 | `toolExecution` | `ToolExecutionMode` | `"parallel"` | `"parallel"` or `"sequential"` |
 | `beforeToolCall` | hook | none | Preflight hook; can block tool execution |
@@ -437,7 +437,7 @@ Checked only when there are no more tool calls and no steering messages. If any 
 
 ## Transport Abstraction
 
-The `transport` option (`"sse"`, `"websocket"`, `"auto"`) is forwarded to the underlying pi-ai stream function. Providers that support multiple transports can use this preference. Default is `"sse"`.
+The `transport` option (`"sse"`, `"websocket"`, `"auto"`) is forwarded to the underlying pi-ai stream function. Providers that support multiple transports can use this preference. Default is `"auto"` (changed from `"sse"` in v0.72.1), which lets each provider select its best available transport (e.g., WebSocket for Codex).
 
 ---
 
@@ -526,6 +526,7 @@ Extends `SimpleStreamOptions` from pi-ai and adds:
 | `toolExecution` | no | `"parallel"` (default) or `"sequential"` |
 | `beforeToolCall` | no | Preflight hook |
 | `afterToolCall` | no | Post-execution hook |
+| `shouldStopAfterTurn` | no | Callback invoked after each completed turn (before polling queued messages or starting the next LLM call); return `true` to exit the agent loop gracefully (v0.72.0+) |
 
 ### Internal Run Functions
 
@@ -542,7 +543,11 @@ These take an `AgentEventSink` callback (`(event) => Promise<void> | void`) inst
 
 | Version | Date | Change |
 |---------|------|--------|
-| 0.69.0 | 2026-04-22 | Current release; **Breaking:** TypeBox 1.x migration; terminating tool results (`terminate: true`) |
+| 0.72.1 | 2026-05-04 | Default transport changed to `"auto"` (was `"sse"`) |
+| 0.72.0 | 2026-05-04 | `shouldStopAfterTurn` callback in `AgentLoopConfig` for graceful loop exit |
+| 0.71.0 | 2026-04-28 | `thinking_level_select` event; `message_end` handler can return replacement message; `ctx.ui.getEditorComponent()`; `name` field in `registerProvider()` |
+| 0.70.0 | 2026-04-26 | Intermediate release |
+| 0.69.0 | 2026-04-22 | **Breaking:** TypeBox 1.x migration; terminating tool results (`terminate: true`) |
 | 0.68.1 | 2026-04-22 | Fix: parallel tool-call rows leave pending state as each tool finalizes; tool results still persisted in assistant source order |
 | 0.67.x | 2026-04-13–16 | Per-tool `executionMode` override; full OpenRouterRouting field set; `onResponse` in StreamOptions; `thinkingDisplay` for Anthropic/Bedrock; Bedrock bearer-token auth |
 | 0.66.1 | 2026-04-08 | Previous stable release |

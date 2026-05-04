@@ -2,7 +2,7 @@
 
 Pi's extension system enables deep customization of the agent through TypeScript modules that can register tools, commands, keyboard shortcuts, event hooks, UI components, and model providers.
 
-Package: `@mariozechner/pi-coding-agent` v0.69.0
+Package: `@mariozechner/pi-coding-agent` v0.72.1
 
 ## Architecture
 
@@ -213,6 +213,7 @@ Register or override a model provider:
 
 ```ts
 pi.registerProvider("my-proxy", {
+  name: "My Proxy",  // v0.71.0+: shown as friendly name in /login display
   baseUrl: "https://proxy.example.com",
   apiKey: "PROXY_API_KEY",
   api: "anthropic-messages",
@@ -263,6 +264,7 @@ These are only available after the bind phase (not during factory execution):
 | `pi.getThinkingLevel()` | Get current thinking level |
 | `pi.setThinkingLevel(level)` | Set thinking level |
 | `pi.events` | Shared `EventBus` for inter-extension communication |
+| `shouldStopAfterTurn` | Callback (agent-core loop config, v0.72.0+): called after each completed turn; return `true` to exit the agent loop gracefully before the next LLM call or queued message is processed |
 
 ### EventBus
 
@@ -421,7 +423,7 @@ earlier handlers, but does NOT reflect provider-level payload modifications.
 | `turn_end` | End of each turn | -- |
 | `message_start` | When a message starts | -- |
 | `message_update` | During streaming (token updates) | -- |
-| `message_end` | When a message ends | -- |
+| `message_end` | When a message ends | Return a replacement `AgentMessage` to override the finalized message (v0.71.0+; useful for fixing cost tracking for custom providers) |
 
 ### Tool Execution Events
 
@@ -466,6 +468,7 @@ Transforms chain across extensions. `"handled"` short-circuits (no further proce
 | Event | When | Return |
 |-------|------|--------|
 | `model_select` | When model changes | -- |
+| `thinking_level_select` | Fires when thinking level is changed by user or programmatically (e.g., via Ctrl+T or /thinking command) (v0.71.0) | -- |
 
 ### User Bash Events
 
@@ -537,6 +540,18 @@ const result = await ctx.ui.custom((tui, theme, keybindings, done) => {
     },
   };
 }, { overlay: true });
+```
+
+### ctx.ui.getEditorComponent() (v0.71.0)
+
+Returns the currently configured editor component (factory). Use this when an extension wants to wrap or decorate the user's configured editor rather than replace it entirely:
+
+```ts
+const existing = ctx.ui.getEditorComponent();
+ctx.ui.setEditorComponent((tui, theme, keybindings) => {
+  const base = existing ? existing(tui, theme, keybindings) : new DefaultEditor(tui, theme, keybindings);
+  return new MyDecoratingEditor(base, tui, theme, keybindings);
+});
 ```
 
 ### Custom Editor

@@ -4,37 +4,33 @@
 
 Pi is an open-source, LLM-powered coding agent system created by Mario Zechner (@badlogic). The project is branded as "the shitty coding agent" (website: shittycodingagent.ai) and is published under the `@mariozechner/*` namespace on npm. The primary domain is pi.dev, donated by exe.dev.
 
-Pi is structured as a monorepo (`badlogic/pi-mono`) containing seven packages that together provide:
+Pi is structured as a monorepo (`badlogic/pi-mono`) containing five packages that together provide:
 
 - A unified multi-provider LLM API
 - A general-purpose agent runtime
 - A terminal-based coding agent CLI
 - A terminal UI framework
 - Web components for AI chat interfaces
-- A Slack bot integration
-- A GPU pod management CLI for vLLM deployments
 
 The coding agent (`pi`) is the flagship application. It ships with four core tools (read, write, edit, bash) and is designed around a minimal-core philosophy: instead of building in sub-agents and plan modes, pi exposes an extension system (TypeScript extensions, skills, prompt templates, themes, and pi packages) so users can adapt it to their workflows without forking.
 
 Pi runs in four modes: interactive TUI, print/JSON output, RPC for process integration, and an SDK for embedding in other applications.
 
-Current version: 0.69.0. License: MIT.
+Current version: 0.72.1. License: MIT.
 
 ---
 
 ## Monorepo Structure
 
-The repository uses npm workspaces. All seven packages live under `packages/`:
+The repository uses npm workspaces. All five packages live under `packages/`:
 
 | Package | npm Name | Directory | Description |
 |---------|----------|-----------|-------------|
 | **pi-tui** | `@mariozechner/pi-tui` | `packages/tui` | Terminal UI library with differential rendering, synchronized output (CSI 2026), component system, inline images, and autocomplete |
-| **pi-ai** | `@mariozechner/pi-ai` | `packages/ai` | Unified multi-provider LLM API supporting 24+ providers (OpenAI, Anthropic, Google, Mistral, Bedrock, Fireworks, etc.) with automatic model discovery, token/cost tracking, and cross-provider handoffs |
+| **pi-ai** | `@mariozechner/pi-ai` | `packages/ai` | Unified multi-provider LLM API supporting 26+ providers (OpenAI, Anthropic, Google, Mistral, Bedrock, Fireworks, etc.) with automatic model discovery, token/cost tracking, and cross-provider handoffs |
 | **pi-agent-core** | `@mariozechner/pi-agent-core` | `packages/agent` | Stateful agent runtime with tool execution, event streaming, transport abstraction, and state management |
 | **pi-coding-agent** | `@mariozechner/pi-coding-agent` | `packages/coding-agent` | Interactive coding agent CLI with session management, extension system, skills, prompt templates, and themes |
-| **pi-mom** | `@mariozechner/pi-mom` | `packages/mom` | "Master Of Mischief" -- a self-managing Slack bot that delegates messages to the pi coding agent, runs in Docker sandboxes, and builds its own tools autonomously |
 | **pi-web-ui** | `@mariozechner/pi-web-ui` | `packages/web-ui` | Web components (built with mini-lit and Tailwind CSS v4) for AI chat interfaces with attachments, artifacts, IndexedDB storage, and CORS proxy support |
-| **pi-pods** | `@mariozechner/pi` | `packages/pods` | CLI for managing vLLM deployments on GPU pods (DataCrunch, RunPod, Vast.ai, etc.) with automatic setup and model configuration |
 
 The workspace configuration in the root `package.json` also includes several example extension directories as workspace members:
 
@@ -43,7 +39,6 @@ packages/web-ui/example
 packages/coding-agent/examples/extensions/with-deps
 packages/coding-agent/examples/extensions/custom-provider-anthropic
 packages/coding-agent/examples/extensions/custom-provider-gitlab-duo
-packages/coding-agent/examples/extensions/custom-provider-qwen-cli
 ```
 
 ---
@@ -57,12 +52,8 @@ Tier 3 - Applications
   pi-coding-agent ─────┬── pi-agent-core ── pi-ai
                        ├── pi-ai
                        └── pi-tui
-  pi-mom ──────────────┬── pi-coding-agent
-                       ├── pi-agent-core
-                       └── pi-ai
   pi-web-ui ───────────┬── pi-ai
                        └── pi-tui
-  pi-pods ─────────────┬── pi-agent-core
 
 Tier 2 - Infrastructure
   pi-agent-core ───────── pi-ai
@@ -85,13 +76,11 @@ Tier 1 - Foundation
 ### Tier 3: Applications
 
 - **pi-coding-agent** -- Depends on pi-ai, pi-agent-core, and pi-tui. The main user-facing CLI application.
-- **pi-mom** -- Depends on pi-ai, pi-agent-core, and pi-coding-agent. Wraps the coding agent for Slack integration.
 - **pi-web-ui** -- Depends on pi-ai and pi-tui. Provides browser-side chat components.
-- **pi-pods** -- Depends on pi-agent-core. GPU pod management tooling.
 
 ### Rationale
 
-This layering enforces separation of concerns. pi-ai can be used standalone for any LLM integration. pi-agent-core can power agents that have nothing to do with coding. The coding agent, Slack bot, and web UI are all consumers of these lower layers. This also means changes to foundation packages require careful consideration since they affect everything above.
+This layering enforces separation of concerns. pi-ai can be used standalone for any LLM integration. pi-agent-core can power agents that have nothing to do with coding. The coding agent and web UI are all consumers of these lower layers. This also means changes to foundation packages require careful consideration since they affect everything above.
 
 ---
 
@@ -125,7 +114,7 @@ Code formatting and linting use Biome (v2.3.5), configured in the root `biome.js
 
 ### Lockstep Versioning
 
-All seven packages share the same version number (currently 0.69.0). The `scripts/sync-versions.js` script enforces this by:
+All five packages share the same version number (currently 0.72.1). The `scripts/sync-versions.js` script enforces this by:
 
 1. Reading all package versions and verifying they match
 2. Updating all inter-package `dependencies` and `devDependencies` to `^<current-version>`
@@ -137,7 +126,7 @@ Version bumps are performed atomically across all packages via `npm version <typ
 The build script in the root `package.json` enforces a sequential build order that respects the dependency graph:
 
 ```
-pi-tui -> pi-ai -> pi-agent-core -> pi-coding-agent -> pi-mom -> pi-web-ui -> pi-pods
+pi-tui -> pi-ai -> pi-agent-core -> pi-coding-agent -> pi-web-ui
 ```
 
 Note: `npm run check` requires `npm run build` to have been run first because the web-ui package uses `tsc` which needs compiled `.d.ts` files from dependencies.
@@ -267,7 +256,7 @@ The coding agent ships with only four tools (read, write, edit, bash) and delibe
 
 ### Provider Agnosticism
 
-pi-ai supports 24+ LLM providers through a unified streaming API. Only models with tool-calling support are included, since tool use is essential for agentic workflows. Providers are lazily loaded to avoid bundling unused SDKs.
+pi-ai supports 26+ LLM providers through a unified streaming API. Only models with tool-calling support are included, since tool use is essential for agentic workflows. Providers are lazily loaded to avoid bundling unused SDKs.
 
 ### Layered SDK
 
