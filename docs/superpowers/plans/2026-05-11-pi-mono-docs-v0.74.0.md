@@ -2,10 +2,10 @@
 
 Date: 2026-05-11
 
-Source repository: `/Users/mudrii/src/tui/pi-mono`  
-Documentation repository: `/Users/mudrii/src/tui/pi-mono-docs`  
-Latest fetched source commit: `3d9e14d7`  
-Latest released tag: `v0.74.0` (`1eee081e`)  
+Source repository: `/Users/mudrii/src/tui/pi-mono`
+Documentation repository: `/Users/mudrii/src/tui/pi-mono-docs`
+Latest fetched source commit: `3d9e14d7`
+Latest released tag: `v0.74.0` (`1eee081e`)
 DeepWiki source: `https://deepwiki.com/badlogic/pi-mono/1-overview`
 
 ## Goal
