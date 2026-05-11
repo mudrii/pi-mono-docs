@@ -8,7 +8,7 @@ Pi uses a layered configuration system. Project settings override global setting
 
 | Path | Scope | Purpose |
 |------|-------|---------|
-| `~/.pi/settings.json` | Global | Default settings for all projects |
+| `~/.pi/agent/settings.json` | Global | Default settings for all projects |
 | `.pi/settings.json` | Project | Project-specific overrides |
 | `~/.pi/agent/auth.json` | Global | API keys and OAuth tokens |
 | `~/.pi/agent/models.json` | Global | Custom model definitions and per-provider API keys |
@@ -136,7 +136,7 @@ Stores API keys and OAuth tokens. Managed automatically via `/login` and the `mo
 {
   "anthropic": {
     "type": "api_key",
-    "apiKey": "sk-ant-..."
+    "key": "sk-ant-..."
   },
   "github-copilot": {
     "type": "oauth",
@@ -153,7 +153,7 @@ Stores API keys and OAuth tokens. Managed automatically via `/login` and the `mo
 
 ## models.json
 
-Customize providers and define custom model entries:
+Customize providers and define custom model entries. Since v0.73.1, `models.json` accepts JSONC-style comments and trailing commas before parsing.
 
 ```json
 {

@@ -36,8 +36,8 @@ An extension is a JavaScript/TypeScript file with a default export function:
 
 ```typescript
 // my-extension.ts
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { defineTool } from "@mariozechner/pi-coding-agent";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 export default async function init(ctx: ExtensionContext) {
@@ -321,7 +321,7 @@ my-pi-extension/
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
-    "@mariozechner/pi-coding-agent": ">=0.50.0"
+    "@earendil-works/pi-coding-agent": ">=0.50.0"
   }
 }
 ```

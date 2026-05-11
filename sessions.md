@@ -8,9 +8,8 @@ Pi stores conversations as JSONL files in a tree structure, enabling branching, 
 
 ```
 ~/.pi/agent/sessions/
-└── <session-id>/
-    ├── session.jsonl     # Append-only conversation (one JSON object per line)
-    └── metadata.json     # Title, timestamps, parent session reference
+└── <encoded-cwd>/
+    └── <timestamp>_<uuid>.jsonl  # Append-only tree session, one JSON object per line
 ```
 
 Override with: `PI_CODING_AGENT_DIR`. (The `session_directory` extension event was removed in v0.65.0.)
@@ -82,9 +81,12 @@ Labels appear in `/tree` and session pickers. Filter by label in `/resume`.
 
 ```bash
 pi                          # Auto-resume last session
-pi --new-session            # Always start fresh
+pi                          # Normal interactive startup
+pi --continue               # Continue previous session
+pi --resume                 # Pick a session interactively
 pi --session <id>           # Resume specific session
-pi -ne                      # Short form: new session
+pi --fork <id>              # Fork specific session into a new session
+pi --no-session             # Ephemeral session, not saved
 ```
 
 ### Resume Keybinding Action
@@ -201,8 +203,9 @@ Custom extension message types can also appear in the JSONL.
 
 ```bash
 # Start working on feature
-pi --new-session
-pi "Implement OAuth 2.0 login"
+pi
+# or run non-interactively:
+pi -p "Implement OAuth 2.0 login"
 
 # Branch before a risky refactor
 /fork "Before database schema change"

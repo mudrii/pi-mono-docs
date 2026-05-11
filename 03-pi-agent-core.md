@@ -1,11 +1,13 @@
-# pi-agent-core (`@mariozechner/pi-agent-core`)
+# pi-agent-core (`@earendil-works/pi-agent-core`)
 
-Package: `@mariozechner/pi-agent-core` v0.72.1
+Package: `@earendil-works/pi-agent-core` v0.74.0
 Source: `packages/agent/`
 License: MIT | Node >= 20.0.0
-Dependency: `@mariozechner/pi-ai ^0.69.0`
+Dependency: `@earendil-works/pi-ai ^0.74.0`
 
-Stateful agent with tool execution and event streaming. Built on `@mariozechner/pi-ai`, this package provides the `Agent` class and a low-level `agentLoop()` API for driving multi-turn LLM conversations with tool calls, steering, and follow-up queues.
+Stateful agent with tool execution and event streaming. Built on `@earendil-works/pi-ai`, this package provides the `Agent` class and a low-level `agentLoop()` API for driving multi-turn LLM conversations with tool calls, steering, and follow-up queues.
+
+> Current `main` after v0.74.0 contains unreleased `AgentHarness` exports for session repositories, execution environments, compaction, resources, skills, prompt templates, stream configuration, and provider hooks. Treat those as unreleased until a tag after v0.74.0 is published.
 
 ---
 
@@ -401,7 +403,7 @@ The `Agent` class updates its state in response to events:
 Extend `AgentMessage` via TypeScript declaration merging:
 
 ```typescript
-declare module "@mariozechner/pi-agent-core" {
+declare module "@earendil-works/pi-agent-core" {
   interface CustomAgentMessages {
     notification: { role: "notification"; text: string; timestamp: number };
   }
@@ -446,7 +448,7 @@ The `transport` option (`"sse"`, `"websocket"`, `"auto"`) is forwarded to the un
 For browser apps that route LLM calls through a backend server:
 
 ```typescript
-import { Agent, streamProxy } from "@mariozechner/pi-agent-core";
+import { Agent, streamProxy } from "@earendil-works/pi-agent-core";
 
 const agent = new Agent({
   streamFn: (model, context, options) =>
@@ -476,7 +478,7 @@ interface ProxyStreamOptions extends SimpleStreamOptions {
 For direct control without the `Agent` class wrapper:
 
 ```typescript
-import { agentLoop, agentLoopContinue } from "@mariozechner/pi-agent-core";
+import { agentLoop, agentLoopContinue } from "@earendil-works/pi-agent-core";
 
 const context: AgentContext = {
   systemPrompt: "You are helpful.",
@@ -543,8 +545,11 @@ These take an `AgentEventSink` callback (`(event) => Promise<void> | void`) inst
 
 | Version | Date | Change |
 |---------|------|--------|
-| 0.72.1 | 2026-05-04 | Default transport changed to `"auto"` (was `"sse"`) |
-| 0.72.0 | 2026-05-04 | `shouldStopAfterTurn` callback in `AgentLoopConfig` for graceful loop exit |
+| 0.74.0 | 2026-05-07 | Lockstep release for package/repository scope migration to `@earendil-works/*` |
+| 0.73.1 | 2026-05-07 | Lockstep release; no package-specific agent-core changelog entries |
+| 0.73.0 | 2026-05-04 | Lockstep release; no package-specific agent-core changelog entries |
+| 0.72.1 | 2026-05-02 | Default transport changed to `"auto"` (was `"sse"`) |
+| 0.72.0 | 2026-05-01 | `shouldStopAfterTurn` callback in `AgentLoopConfig` for graceful loop exit |
 | 0.71.0 | 2026-04-28 | `thinking_level_select` event; `message_end` handler can return replacement message; `ctx.ui.getEditorComponent()`; `name` field in `registerProvider()` |
 | 0.70.0 | 2026-04-26 | Intermediate release |
 | 0.69.0 | 2026-04-22 | **Breaking:** TypeBox 1.x migration; terminating tool results (`terminate: true`) |

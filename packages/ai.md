@@ -1,15 +1,17 @@
-# @mariozechner/pi-ai
+# @earendil-works/pi-ai
 
-**Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-ai)
+**Version:** 0.74.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@earendil-works/pi-ai)
 
-Unified multi-provider LLM streaming API. Provides a consistent interface over 23+ providers with automatic model discovery, token/cost tracking, streaming tool calls, and OAuth utilities.
+Unified multi-provider LLM streaming API. Provides a consistent interface over released provider IDs with automatic model discovery, token/cost tracking, streaming tool calls, and OAuth utilities.
+
+> v0.74.0 correction notes: the current OAuth public API is provider-specific (`loginAnthropic`, `loginOpenAICodex`, `loginGitHubCopilot`) plus `refreshOAuthToken` and `getOAuthApiKey`; older generic examples such as `login("google-gemini-cli")` are historical and refer to providers removed in v0.71.0. `supportsXhigh()` was removed in v0.72.0; use `getSupportedThinkingLevels()` and `clampThinkingLevel()`.
 
 ---
 
 ## Installation
 
 ```bash
-npm install @mariozechner/pi-ai
+npm install @earendil-works/pi-ai
 ```
 
 ---
@@ -17,7 +19,7 @@ npm install @mariozechner/pi-ai
 ## Quick Start
 
 ```typescript
-import { getModel, streamSimple } from "@mariozechner/pi-ai";
+import { getModel, streamSimple } from "@earendil-works/pi-ai";
 
 const model = getModel("anthropic", "claude-opus-4-6");
 
@@ -49,7 +51,7 @@ for await (const event of stream) {
 ## Model Discovery
 
 ```typescript
-import { getModel, getModels, getProviders } from "@mariozechner/pi-ai";
+import { getModel, getModels, getProviders } from "@earendil-works/pi-ai";
 
 // Get a specific model (type-safe)
 const model = getModel("anthropic", "claude-opus-4-6");
@@ -90,8 +92,8 @@ interface Model<TApi extends Api> {
 ### `streamSimple()` — Recommended
 
 ```typescript
-import { streamSimple } from "@mariozechner/pi-ai";
-import type { SimpleStreamOptions } from "@mariozechner/pi-ai";
+import { streamSimple } from "@earendil-works/pi-ai";
+import type { SimpleStreamOptions } from "@earendil-works/pi-ai";
 
 const options: SimpleStreamOptions = {
   reasoning: "medium",        // "minimal" | "low" | "medium" | "high" | "xhigh"
@@ -129,7 +131,7 @@ const message = await stream.result();
 ### `stream()` — Provider-Specific Options
 
 ```typescript
-import { stream } from "@mariozechner/pi-ai";
+import { stream } from "@earendil-works/pi-ai";
 
 const streamObj = stream(model, context, providerSpecificOptions);
 ```
@@ -157,7 +159,7 @@ type AssistantMessageEvent =
 ## Completion (Non-Streaming)
 
 ```typescript
-import { completeSimple, complete } from "@mariozechner/pi-ai";
+import { completeSimple, complete } from "@earendil-works/pi-ai";
 
 // Simple completion
 const message = await completeSimple(model, context, options);
@@ -217,7 +219,7 @@ interface ToolCall { type: "toolCall"; id: string; name: string; arguments: Reco
 Define tools using TypeBox schemas:
 
 ```typescript
-import { Type } from "@mariozechner/pi-ai";  // Re-exported from @sinclair/typebox
+import { Type } from "@earendil-works/pi-ai";  // Re-exported from @sinclair/typebox
 
 const tool = {
   name: "get_weather",
@@ -279,7 +281,7 @@ console.log(message.usage);
 // }
 
 // Calculate cost separately
-import { calculateCost } from "@mariozechner/pi-ai";
+import { calculateCost } from "@earendil-works/pi-ai";
 const cost = calculateCost(model, usage);
 ```
 
@@ -344,18 +346,24 @@ for await (const event of stream) {
 ## OAuth
 
 ```typescript
-import { login, refresh, getToken } from "@mariozechner/pi-ai/oauth";
+import {
+  getOAuthApiKey,
+  loginAnthropic,
+  loginGitHubCopilot,
+  loginOpenAICodex,
+  refreshOAuthToken
+} from "@earendil-works/pi-ai/oauth";
 
 // Login to a provider
-await login("anthropic");    // Opens browser
-await login("github-copilot");
-await login("google-gemini-cli");
+const anthropicCredentials = await loginAnthropic();
+const copilotCredentials = await loginGitHubCopilot();
+const codexCredentials = await loginOpenAICodex();
 
 // Get current token
-const token = await getToken("anthropic");
+const token = await getOAuthApiKey(anthropicCredentials);
 
 // Refresh token
-await refresh("anthropic");
+await refreshOAuthToken(anthropicCredentials);
 ```
 
 ---
@@ -363,7 +371,7 @@ await refresh("anthropic");
 ## Proxy Support
 
 ```typescript
-import { streamProxy } from "@mariozechner/pi-agent-core";
+import { streamProxy } from "@earendil-works/pi-agent-core";
 
 const stream = streamProxy(model, context, {
   authToken: "bearer-token",
@@ -376,7 +384,7 @@ const stream = streamProxy(model, context, {
 ## Custom Provider Registration
 
 ```typescript
-import { registerApiProvider, clearApiProviders } from "@mariozechner/pi-ai";
+import { registerApiProvider, clearApiProviders } from "@earendil-works/pi-ai";
 
 registerApiProvider({
   api: "openai-completions",
@@ -401,7 +409,7 @@ import {
   validateToolArguments,
   checkContextOverflow,
   sanitizeSurrogates
-} from "@mariozechner/pi-ai";
+} from "@earendil-works/pi-ai";
 
 // Check if model supports xhigh reasoning
 if (supportsXhigh(model)) {
@@ -438,7 +446,7 @@ Forwarded to Bedrock Converse API `requestMetadata`; appears in AWS Cost Explore
 For deterministic tests and demos:
 
 ```typescript
-import { registerFauxProvider, fauxAssistantMessage, fauxText, fauxThinking, fauxToolCall } from "@mariozechner/pi-ai";
+import { registerFauxProvider, fauxAssistantMessage, fauxText, fauxThinking, fauxToolCall } from "@earendil-works/pi-ai";
 registerFauxProvider();
 ```
 
@@ -446,7 +454,11 @@ registerFauxProvider();
 
 ## Supported Providers (23+)
 
-`amazon-bedrock`, `anthropic`, `azure-openai-responses`, `cerebras`, `github-copilot`, `google`, `google-antigravity`, `google-gemini-cli`, `google-vertex`, `groq`, `huggingface`, `kimi-coding`, `mistral`, `openai`, `openai-codex`, `opencode`, `opencode-go`, `openrouter`, `vercel-ai-gateway`, `xai`, `zai`
+Released v0.74.0 provider IDs include:
+
+`amazon-bedrock`, `anthropic`, `azure-openai-responses`, `cerebras`, `github-copilot`, `google`, `google-vertex`, `groq`, `huggingface`, `kimi-coding`, `mistral`, `openai`, `openai-codex`, `opencode`, `opencode-go`, `openrouter`, `vercel-ai-gateway`, `xai`, `zai`, `deepseek`, `minimax`, `minimax-cn`, `moonshotai`, `moonshotai-cn`, `fireworks`, `cloudflare-workers-ai`, `cloudflare-ai-gateway`, `xiaomi`, `xiaomi-token-plan-cn`, `xiaomi-token-plan-ams`, `xiaomi-token-plan-sgp`.
+
+`google-gemini-cli` and `google-antigravity` were removed in v0.71.0. Current `main` after v0.74.0 adds `together`, but that is unreleased.
 
 ### Deno Compatibility (v0.66.0)
 

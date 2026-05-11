@@ -2,14 +2,14 @@
 
 Comprehensive documentation for **Pi** — a minimal, extensible, terminal-based AI coding agent and supporting library ecosystem.
 
-- **Current release:** v0.72.1 (2026-05-02)
+- **Current release:** v0.74.0 (2026-05-07)
 - **Author:** Mario Zechner ([@badlogic](https://github.com/badlogic))
-- **Package:** [`@mariozechner/pi-coding-agent`](https://www.npmjs.com/package/@mariozechner/pi-coding-agent) on npm
-- **Source:** [github.com/badlogic/pi-mono](https://github.com/badlogic/pi-mono)
+- **Package:** [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) on npm
+- **Source:** [github.com/earendil-works/pi-mono](https://github.com/earendil-works/pi-mono)
 - **Website:** [pi.dev](https://pi.dev) / [shittycodingagent.ai](https://shittycodingagent.ai)
 - **Discord:** [discord.com/invite/3cU7Bz4UPx](https://discord.com/invite/3cU7Bz4UPx)
 
-> This documentation covers all released versions (v0.0.1 through v0.72.1). All content is fact-checked against source code, deepwiki documentation, and online sources.
+> This documentation covers all released versions (v0.0.1 through v0.74.0). All current-release content is fact-checked against local source at `3d9e14d7`, tag `v0.74.0`, npm metadata, GitHub release metadata, and DeepWiki where it remains current.
 
 ---
 
@@ -26,15 +26,15 @@ Pi's core is deliberately minimal — under 1,000 tokens of system prompt, only 
 | # | Document | Description |
 |---|----------|-------------|
 | 01 | [Architecture Overview](01-architecture-overview.md) | Monorepo structure, three-tier dependency hierarchy, build system, lockstep versioning, release process, contributing guidelines |
-| 02 | [Pi-AI: LLM Abstraction](02-pi-ai-llm-abstraction.md) | 26+ providers, API identifiers, streaming entry points, ThinkingLevel mappings, OAuth, model catalog, cost tracking, TypeBox tool validation |
+| 02 | [Pi-AI: LLM Abstraction](02-pi-ai-llm-abstraction.md) | Released provider IDs, API identifiers, streaming entry points, ThinkingLevel mappings, OAuth, model catalog, cost tracking, TypeBox tool validation |
 | 03 | [Pi-Agent-Core](03-pi-agent-core.md) | Agent class API, loop execution model, tool pipeline (parallel by default), 10 event types, transport abstraction, low-level API |
 | 04 | [Pi-Coding-Agent](04-pi-coding-agent.md) | CLI modes (interactive/print/RPC/SDK), AgentSession, 7 built-in tools, JSONL sessions, compaction, settings, 18 slash commands |
 | 05 | [Pi-TUI: Terminal UI](05-pi-tui-terminal-ui.md) | 13 components, Kitty keyboard protocol, differential rendering, autocomplete, fuzzy matching, overlay system |
 | 06 | [Application Packages](06-application-packages.md) | pi-web-ui (ChatPanel, browser, web components) |
 | 07 | [Extension System](07-extension-system.md) | Factory pattern, jiti loading, ExtensionAPI, hooks, UI integration, custom providers, example extensions |
 | 08 | [Sessions & Persistence](08-sessions-and-persistence.md) | JSONL tree structure, branching, compaction, settings management, model resolution, migration |
-| 09 | [Version History](09-version-history.md) | All 255 releases in 7 eras, breaking changes, feature milestones |
-| 10 | [Fact-Check Report](10-fact-check-report.md) | Online verification: npm (306 dependents), GitHub (33.8k stars), domains, Discord, author |
+| 09 | [Version History](09-version-history.md) | 269 tags through v0.74.0, breaking changes, feature milestones, unreleased-main boundary |
+| 10 | [Fact-Check Report](10-fact-check-report.md) | Verification against local source, npm, GitHub releases, and stale DeepWiki pages |
 
 ## Supplementary Reference
 
@@ -65,15 +65,15 @@ Previously generated reference docs covering v0.58.4:
 
 ---
 
-## Packages (v0.72.1)
+## Packages (v0.74.0)
 
 | Package | Description |
 |---------|-------------|
-| **[@mariozechner/pi-coding-agent](04-pi-coding-agent.md)** | Interactive coding agent CLI (`pi` binary) |
-| **[@mariozechner/pi-ai](02-pi-ai-llm-abstraction.md)** | Unified multi-provider LLM API (26+ providers) |
-| **[@mariozechner/pi-agent-core](03-pi-agent-core.md)** | Agent runtime with tool calling and state management |
-| **[@mariozechner/pi-tui](05-pi-tui-terminal-ui.md)** | Terminal UI library with differential rendering |
-| **[@mariozechner/pi-web-ui](06-application-packages.md)** | Web components for AI chat interfaces |
+| **[@earendil-works/pi-coding-agent](04-pi-coding-agent.md)** | Interactive coding agent CLI (`pi` binary) |
+| **[@earendil-works/pi-ai](02-pi-ai-llm-abstraction.md)** | Unified multi-provider LLM API |
+| **[@earendil-works/pi-agent-core](03-pi-agent-core.md)** | Agent runtime with tool calling and state management |
+| **[@earendil-works/pi-tui](05-pi-tui-terminal-ui.md)** | Terminal UI library with differential rendering |
+| **[@earendil-works/pi-web-ui](06-application-packages.md)** | Web components for AI chat interfaces |
 
 ---
 
@@ -81,7 +81,7 @@ Previously generated reference docs covering v0.58.4:
 
 | Feature | Details |
 |---------|---------|
-| **Providers** | 26+ LLM providers, 100+ models (tool-calling only) |
+| **Providers** | 29 released provider IDs in v0.74.0, generated tool-calling model metadata |
 | **System prompt** | Under 1,000 tokens |
 | **Built-in tools** | 7: `read`, `write`, `edit`, `bash`, `grep`, `find`, `ls` |
 | **Extensions** | TypeScript extensions with full API access via jiti |
@@ -97,12 +97,11 @@ Previously generated reference docs covering v0.58.4:
 
 - **Total documentation:** ~20,000+ lines across 28 files
 - **Source files reviewed:** 170+ TypeScript files across 5 packages
-- **Providers documented:** 26+ with API identifiers
-- **Releases covered:** 267 versions (v0.0.1 → v0.72.1)
-- **Online verifications:** npm, GitHub, 3 domains, Discord, author confirmed
-- **Community:** 33.8k GitHub stars, 3.8k forks
+- **Providers documented:** 29 released provider IDs with API identifiers
+- **Releases covered:** 269 tags (v0.0.1 -> v0.74.0)
+- **Online verifications:** npm package metadata, GitHub release metadata, DeepWiki index state
 
 ---
 
-Generated on 2026-05-04 from pi-mono source code at commit `main` (v0.72.1).
-Cross-referenced with [deepwiki.com/badlogic/pi-mono](https://deepwiki.com/badlogic/pi-mono).
+Updated on 2026-05-11 from pi-mono source code at commit `3d9e14d7` with latest release tag `v0.74.0`.
+Cross-referenced with [DeepWiki](https://deepwiki.com/badlogic/pi-mono/1-overview), npm package metadata, and GitHub releases. DeepWiki remains useful for architecture orientation but is stale for package scope and releases after April 2026.

@@ -8,7 +8,7 @@ This document covers the application-level package in the pi-mono monorepo: the 
 
 ## pi-web-ui: Browser Chat Interface
 
-Package: `@mariozechner/pi-web-ui` (v0.72.1)
+Package: `@earendil-works/pi-web-ui` (v0.74.0)
 License: MIT
 Source: `packages/web-ui/`
 
@@ -16,9 +16,9 @@ pi-web-ui provides reusable web UI components for building AI chat interfaces in
 
 ### Dependencies
 
-- `@mariozechner/pi-ai` -- LLM provider abstraction
-- `@mariozechner/pi-tui` -- Reused for fuzzy matching utilities
-- `@mariozechner/pi-agent-core` -- Agent state machine (peer dependency)
+- `@earendil-works/pi-ai` -- LLM provider abstraction
+- `@earendil-works/pi-tui` -- Reused for fuzzy matching utilities
+- `@earendil-works/pi-agent-core` -- Agent state machine (peer dependency)
 - `@mariozechner/mini-lit` -- Lightweight Lit-based component framework (peer dependency)
 - `lit` -- Web components library (peer dependency)
 - `pdfjs-dist`, `docx-preview`, `jszip`, `xlsx` -- Document parsing
@@ -89,7 +89,7 @@ Beyond standard LLM messages (user, assistant, toolResult), pi-web-ui defines:
 - `UserMessageWithAttachments` -- role `"user-with-attachments"` with an `attachments` array. Type guard: `isUserMessageWithAttachments()`
 - `ArtifactMessage` -- role `"artifact"` with `action` (create/update/delete), `filename`, and `content`. Used for session persistence of artifacts. Type guard: `isArtifactMessage()`
 
-Custom message types can be added via TypeScript declaration merging on `CustomAgentMessages` from `@mariozechner/pi-agent-core`.
+Custom message types can be added via TypeScript declaration merging on `CustomAgentMessages` from `@earendil-works/pi-agent-core`.
 
 ### Message Transformation
 

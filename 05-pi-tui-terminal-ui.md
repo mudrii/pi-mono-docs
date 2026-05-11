@@ -1,6 +1,6 @@
 # pi-tui: Terminal User Interface Framework
 
-Package: `@mariozechner/pi-tui` (v0.69.0)
+Package: `@earendil-works/pi-tui` (v0.74.0)
 License: MIT
 Source: `packages/tui/`
 

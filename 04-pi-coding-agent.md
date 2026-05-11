@@ -1,11 +1,11 @@
-# pi-coding-agent (`@mariozechner/pi-coding-agent`)
+# pi-coding-agent (`@earendil-works/pi-coding-agent`)
 
-Package: `@mariozechner/pi-coding-agent` v0.69.0
+Package: `@earendil-works/pi-coding-agent` v0.74.0
 Source: `packages/coding-agent/`
 License: MIT | Node >= 20.6.0
 Binary: `pi`
 
-Pi is a minimal terminal coding harness built on `@mariozechner/pi-agent-core` and `@mariozechner/pi-ai`. It ships with four built-in tools (read, write, edit, bash), session persistence, extension system, and runs in four modes: interactive TUI, print/JSON output, RPC over stdio, and SDK for embedding.
+Pi is a minimal terminal coding harness built on `@earendil-works/pi-agent-core` and `@earendil-works/pi-ai`. It ships with four default coding tools (`read`, `bash`, `edit`, `write`), optional read-only tools (`grep`, `find`, `ls`), session persistence, extension system, and four integration modes: interactive TUI, print/JSON output, RPC over stdio, and SDK embedding.
 
 ---
 
@@ -43,7 +43,7 @@ The `main(args)` function orchestrates the full startup sequence:
 ### SDK Entry (`src/core/sdk.ts`)
 
 ```typescript
-import { createAgentSession, SessionManager, AuthStorage, ModelRegistry } from "@mariozechner/pi-coding-agent";
+import { createAgentSession, SessionManager, AuthStorage, ModelRegistry } from "@earendil-works/pi-coding-agent";
 
 const authStorage = AuthStorage.create();
 const modelRegistry = ModelRegistry.create(authStorage); // file-backed (use ModelRegistry.inMemory(authStorage) for tests)
@@ -580,7 +580,8 @@ pi [options] [@files...] [messages...]
 | Option | Description |
 |--------|-------------|
 | `--tools <list>` | Comma-separated built-in tool names |
-| `--no-tools` | Disable all built-in tools |
+| `--no-tools` | Disable all built-in and extension tools by default |
+| `--no-builtin-tools` | Disable built-in tools while keeping extension/custom tools enabled |
 
 ### Resource Options
 
@@ -712,7 +713,7 @@ The package exports a comprehensive public API for programmatic usage:
 
 **Theme:** `Theme`, `initTheme`, `highlightCode`, `getMarkdownTheme`
 
-**Hooks subpath export:** `@mariozechner/pi-coding-agent/hooks` provides hook types for extension development
+**Hooks subpath export:** `@earendil-works/pi-coding-agent/hooks` provides hook types for extension development
 
 ---
 
@@ -743,7 +744,7 @@ import {
   createAgentSessionServices,
   getAgentDir,
   SessionManager,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 
 const createRuntime: CreateAgentSessionRuntimeFactory = async ({
   cwd,
@@ -786,7 +787,7 @@ See `examples/sdk/13-session-runtime.ts` for a complete working example.
 `defineTool()` creates standalone custom tool definitions with full TypeScript parameter type inference — no manual type casts needed:
 
 ```typescript
-import { defineTool } from "@mariozechner/pi-coding-agent";
+import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";  // v0.69.0+: import from "typebox", not "@sinclair/typebox"
 
 const greetTool = defineTool({

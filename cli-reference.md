@@ -10,7 +10,7 @@ The `pi` binary is the main entry point for the pi coding agent.
 pi [FLAGS] [PROMPT]
 ```
 
-If `PROMPT` is provided, pi runs in non-interactive (print) mode and exits. Otherwise, it starts the interactive TUI.
+If `--print`/`-p` is provided, or stdin is piped, pi runs non-interactively and exits. A bare `PROMPT` without `--print` is passed into the normal interactive startup flow.
 
 ---
 
@@ -20,17 +20,24 @@ If `PROMPT` is provided, pi runs in non-interactive (print) mode and exits. Othe
 |------|-------------|
 | `--model <ref>` | Select model at startup. Accepts exact ID, `provider/id`, fuzzy name, glob, or `name:thinking` (e.g., `sonnet:high`) |
 | `--thinking <level>` | Thinking level: `off`, `minimal`, `low`, `medium`, `high`, `xhigh` |
-| `--new-session` | Force a new session (don't resume last) |
-| `--no-resume` | Alias for `--new-session` |
-| `--session <id>` | Resume a specific session by ID |
+| `--continue`, `-c` | Continue the previous session |
+| `--resume`, `-r` | Open the session picker |
+| `--session <path\|id>` | Use a specific session file or partial UUID |
+| `--fork <path\|id>` | Fork a specific session file or partial UUID into a new session |
+| `--session-dir <dir>` | Directory for session storage and lookup |
+| `--no-session` | Run ephemerally without saving a session |
+| `--print`, `-p` | Non-interactive mode: process prompt/stdin and exit |
 | `--no-print` | In print mode, suppress model output to stdout |
-| `--json` | Output JSONL event stream (for scripting) |
-| `--rpc` | Run in RPC mode (LF-delimited JSONL over stdin/stdout) |
+| `--mode json` | Output JSONL event stream (for scripting) |
+| `--mode rpc` | Run in RPC mode (LF-delimited JSONL over stdin/stdout) |
 | `--offline` | Disable startup network operations |
 | `--verbose` | Enable verbose logging |
-| `-ne` | Alias for `--new-session` |
-| `-ns` | Alias for `--no-resume` |
-| `-np` | Alias for `--no-print` |
+| `--no-extensions`, `-ne` | Disable extension discovery; explicit `--extension` paths still work |
+| `--no-skills`, `-ns` | Disable skills discovery and loading |
+| `--no-prompt-templates`, `-np` | Disable prompt template discovery and loading |
+| `--no-tools`, `-nt` | Disable all tools by default, including built-in and extension tools |
+| `--no-builtin-tools`, `-nbt` | Disable built-in tools while keeping extension/custom tools enabled |
+| `--tools`, `-t <tools>` | Comma-separated allowlist of built-in, extension, or custom tool names |
 
 > **Note (v0.65.0):** Unknown single-dash flags now produce an error instead of being silently ignored. For example, `-s` will error. Use the full `--session` flag instead.
 
@@ -183,17 +190,17 @@ Slash commands are available in the interactive TUI. Type `/` to see completions
 Run pi non-interactively:
 
 ```bash
-pi "Explain how async/await works in TypeScript"
+pi -p "Explain how async/await works in TypeScript"
 # Output goes to stdout, pi exits when done
 
-pi --json "Generate a JSON schema for a user object"
+pi -p --mode json "Generate a JSON schema for a user object"
 # Output as JSONL event stream
 
-pi --no-print "Refactor src/utils.ts for readability"
+pi -p --no-print "Refactor src/utils.ts for readability"
 # Run task silently (no stdout output)
 ```
 
-### JSONL Event Stream (`--json`)
+### JSONL Event Stream (`--mode json`)
 
 Each line is a JSON event:
 
@@ -213,7 +220,7 @@ Each line is a JSON event:
 For integration with editors, IDEs, or non-Node clients:
 
 ```bash
-pi --rpc
+pi --mode rpc
 ```
 
 Communicates via LF-delimited JSONL on stdin/stdout. Breaking change in v0.57.0: strict LF-only framing (no CRLF).

@@ -1,6 +1,6 @@
 # LLM Providers
 
-Pi includes 26+ LLM providers with 100+ models. Only models supporting tool calling are included in the catalog. (Updated for v0.72.1.)
+Pi includes 29 released LLM provider IDs in v0.74.0, with generated model metadata restricted to models that support tool calling. Current `main` also contains unreleased Together AI provider work; this page keeps released providers separate from unreleased notes.
 
 ---
 
@@ -8,9 +8,9 @@ Pi includes 26+ LLM providers with 100+ models. Only models supporting tool call
 
 | Provider ID | Auth Method | Notes |
 |-------------|-------------|-------|
-| `anthropic` | `ANTHROPIC_API_KEY` or OAuth | Claude family; Opus 4.6 default (1M context) |
+| `anthropic` | `ANTHROPIC_API_KEY` or OAuth | Claude family; default `claude-opus-4-7` in v0.74.0 |
 | `openai` | `OPENAI_API_KEY` | GPT-5.4 default |
-| `openai-codex` | OAuth or `OPENAI_API_KEY` | Responses/WebSocket; GPT-5.3-codex, GPT-5.4, GPT-5.4-mini (v0.61.0) |
+| `openai-codex` | OAuth or `OPENAI_API_KEY` | Responses/WebSocket; default `gpt-5.5` in v0.74.0 |
 | `azure-openai-responses` | Azure credentials | Azure OpenAI Responses API |
 | `google` | `GEMINI_API_KEY` | Gemini 3.x |
 | `google-vertex` | ADC or `GOOGLE_CLOUD_API_KEY` | Vertex AI; includes `gemini-3.1-pro-preview-customtools` (v0.63.1) |
@@ -30,9 +30,14 @@ Pi includes 26+ LLM providers with 100+ models. Only models supporting tool call
 | `zai` | `ZAI_API_KEY` | z.ai GLM-5 |
 | `deepseek` | `DEEPSEEK_API_KEY` | OpenAI-compatible; V4 Flash, V4 Pro; `xhigh` thinking maps to DeepSeek `max` reasoning effort (v0.70.1) |
 | `cloudflare-workers-ai` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` | Built-in OpenAI-compatible streaming (v0.70.6) |
-| `cloudflare` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_GATEWAY_ID` | Cloudflare AI Gateway; routes OpenAI, Anthropic, Workers AI (v0.71.0) |
-| `moonshot` | `MOONSHOT_API_KEY` | Moonshot AI; OpenAI-compatible (v0.71.0) |
+| `cloudflare-ai-gateway` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_GATEWAY_ID` | Cloudflare AI Gateway; routes OpenAI, Anthropic, Workers AI (v0.71.0) |
+| `moonshotai` | `MOONSHOT_API_KEY` | Moonshot AI; OpenAI-compatible (v0.71.0) |
+| `moonshotai-cn` | `MOONSHOT_API_KEY` | Moonshot AI China endpoint; OpenAI-compatible |
 | `xiaomi` | `XIAOMI_API_KEY` | Xiaomi MiMo; Anthropic-compatible; default model `mimo-v2.5-pro`; API billing at platform.xiaomimimo.com (v0.72.0) |
+| `xiaomi-token-plan-cn` | `XIAOMI_TOKEN_PLAN_CN_API_KEY` | Xiaomi MiMo Token Plan China region (v0.73.0) |
+| `xiaomi-token-plan-ams` | `XIAOMI_TOKEN_PLAN_AMS_API_KEY` | Xiaomi MiMo Token Plan Amsterdam region (v0.73.0) |
+| `xiaomi-token-plan-sgp` | `XIAOMI_TOKEN_PLAN_SGP_API_KEY` | Xiaomi MiMo Token Plan Singapore region (v0.73.0) |
+| `minimax-cn` | `MINIMAX_API_KEY` | MiniMax China endpoint |
 
 ---
 
@@ -90,10 +95,15 @@ Select from: Anthropic (Claude Pro/Max), GitHub Copilot, OpenAI Codex.
 
 | Provider | Default Model |
 |----------|--------------|
-| `anthropic` | `claude-opus-4-6` (1M context) |
+| `anthropic` | `claude-opus-4-7` |
 | `openai` | `gpt-5.4` |
-| `openai-codex` | `gpt-5.4` |
-| `google` | `gemini-3-pro` |
+| `openai-codex` | `gpt-5.5` |
+| `google` | `gemini-3.1-pro-preview` |
+| `openrouter` | `moonshotai/kimi-k2.6` |
+
+## Unreleased Provider Notes
+
+Current `main` after `v0.74.0` adds Together AI with `TOGETHER_API_KEY` and default model `moonshotai/Kimi-K2.6`. Do not treat this as released until a tag after `v0.74.0` is published.
 
 ### Selection Formats
 

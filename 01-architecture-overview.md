@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-Pi is an open-source, LLM-powered coding agent system created by Mario Zechner (@badlogic). The project is branded as "the shitty coding agent" (website: shittycodingagent.ai) and is published under the `@mariozechner/*` namespace on npm. The primary domain is pi.dev, donated by exe.dev.
+Pi is an open-source, LLM-powered coding agent system created by Mario Zechner (@badlogic). The project is branded as "the shitty coding agent" and, starting with v0.74.0, is published under the `@earendil-works/*` namespace on npm. The primary domain is pi.dev.
 
-Pi is structured as a monorepo (`badlogic/pi-mono`) containing five packages that together provide:
+Pi is structured as a monorepo (`earendil-works/pi-mono`) containing five active packages that together provide:
 
 - A unified multi-provider LLM API
 - A general-purpose agent runtime
@@ -16,7 +16,7 @@ The coding agent (`pi`) is the flagship application. It ships with four core too
 
 Pi runs in four modes: interactive TUI, print/JSON output, RPC for process integration, and an SDK for embedding in other applications.
 
-Current version: 0.72.1. License: MIT.
+Current released version: 0.74.0. License: MIT.
 
 ---
 
@@ -26,11 +26,11 @@ The repository uses npm workspaces. All five packages live under `packages/`:
 
 | Package | npm Name | Directory | Description |
 |---------|----------|-----------|-------------|
-| **pi-tui** | `@mariozechner/pi-tui` | `packages/tui` | Terminal UI library with differential rendering, synchronized output (CSI 2026), component system, inline images, and autocomplete |
-| **pi-ai** | `@mariozechner/pi-ai` | `packages/ai` | Unified multi-provider LLM API supporting 26+ providers (OpenAI, Anthropic, Google, Mistral, Bedrock, Fireworks, etc.) with automatic model discovery, token/cost tracking, and cross-provider handoffs |
-| **pi-agent-core** | `@mariozechner/pi-agent-core` | `packages/agent` | Stateful agent runtime with tool execution, event streaming, transport abstraction, and state management |
-| **pi-coding-agent** | `@mariozechner/pi-coding-agent` | `packages/coding-agent` | Interactive coding agent CLI with session management, extension system, skills, prompt templates, and themes |
-| **pi-web-ui** | `@mariozechner/pi-web-ui` | `packages/web-ui` | Web components (built with mini-lit and Tailwind CSS v4) for AI chat interfaces with attachments, artifacts, IndexedDB storage, and CORS proxy support |
+| **pi-tui** | `@earendil-works/pi-tui` | `packages/tui` | Terminal UI library with differential rendering, synchronized output (CSI 2026), component system, inline images, and autocomplete |
+| **pi-ai** | `@earendil-works/pi-ai` | `packages/ai` | Unified multi-provider LLM API supporting 26+ providers (OpenAI, Anthropic, Google, Mistral, Bedrock, Fireworks, etc.) with automatic model discovery, token/cost tracking, and cross-provider handoffs |
+| **pi-agent-core** | `@earendil-works/pi-agent-core` | `packages/agent` | Stateful agent runtime with tool execution, event streaming, transport abstraction, and state management |
+| **pi-coding-agent** | `@earendil-works/pi-coding-agent` | `packages/coding-agent` | Interactive coding agent CLI with session management, extension system, skills, prompt templates, and themes |
+| **pi-web-ui** | `@earendil-works/pi-web-ui` | `packages/web-ui` | Web components (built with mini-lit and Tailwind CSS v4) for AI chat interfaces with attachments, artifacts, IndexedDB storage, and CORS proxy support |
 
 The workspace configuration in the root `package.json` also includes several example extension directories as workspace members:
 
@@ -66,7 +66,7 @@ Tier 1 - Foundation
 
 ### Tier 1: Foundation
 
-- **pi-ai** -- The LLM abstraction layer. Has no dependencies on other pi packages. Provides a unified streaming API across providers, model discovery, tool definition via TypeBox 1.x schemas, token tracking, and context serialization. Providers are lazily loaded via subpath exports (e.g., `@mariozechner/pi-ai/anthropic`).
+- **pi-ai** -- The LLM abstraction layer. Has no dependencies on other pi packages. Provides a unified streaming API across providers, model discovery, tool definition via TypeBox 1.x schemas, token tracking, and context serialization. Providers are lazily loaded via subpath exports (e.g., `@earendil-works/pi-ai/anthropic`).
 - **pi-tui** -- The terminal UI framework. Also has no internal dependencies. Provides differential rendering, component abstractions (Text, Editor, Markdown, SelectList, Image, overlays, etc.), and input handling.
 
 ### Tier 2: Infrastructure
@@ -99,7 +99,7 @@ The project uses TypeScript with a shared base configuration in `tsconfig.base.j
 - **Strict mode**: enabled
 - **Declarations**: `.d.ts` and declaration maps generated for all packages
 
-The root `tsconfig.json` extends the base config with `noEmit: true` and path aliases mapping `@mariozechner/*` package names to their source directories. This enables IDE navigation across packages without building first. Each package has its own `tsconfig.build.json` for compilation.
+The root `tsconfig.json` extends the base config with `noEmit: true` and path aliases mapping workspace package names to their source directories. This enables IDE navigation across packages without building first. Each package has its own `tsconfig.build.json` for compilation.
 
 The project uses `tsgo` (from `@typescript/native-preview`) as the build compiler for most packages, and standard `tsc` for pi-web-ui (which needs browser-compatible output).
 
@@ -114,7 +114,7 @@ Code formatting and linting use Biome (v2.3.5), configured in the root `biome.js
 
 ### Lockstep Versioning
 
-All five packages share the same version number (currently 0.72.1). The `scripts/sync-versions.js` script enforces this by:
+All five active packages share the same version number (currently 0.74.0). The `scripts/sync-versions.js` script enforces this by:
 
 1. Reading all package versions and verifying they match
 2. Updating all inter-package `dependencies` and `devDependencies` to `^<current-version>`

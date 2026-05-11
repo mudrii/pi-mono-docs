@@ -1,6 +1,6 @@
-# @mariozechner/pi-web-ui
+# @earendil-works/pi-web-ui
 
-**Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-web-ui)
+**Version:** 0.74.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@earendil-works/pi-web-ui)
 
 Web UI components for pi: chat interface, artifact panel, IndexedDB session storage, and a multi-format attachment system. Built on Lit web components.
 
@@ -9,7 +9,7 @@ Web UI components for pi: chat interface, artifact panel, IndexedDB session stor
 ## Installation
 
 ```bash
-npm install @mariozechner/pi-web-ui lit @mariozechner/mini-lit
+npm install @earendil-works/pi-web-ui lit @mariozechner/mini-lit
 ```
 
 **Required peer dependencies:**
@@ -24,14 +24,14 @@ npm install @mariozechner/pi-web-ui lit @mariozechner/mini-lit
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="stylesheet" href="node_modules/@mariozechner/pi-web-ui/dist/app.css">
+  <link rel="stylesheet" href="node_modules/@earendil-works/pi-web-ui/dist/app.css">
 </head>
 <body>
   <pi-chat-panel id="chat"></pi-chat-panel>
 
   <script type="module">
-    import { Agent } from "@mariozechner/pi-agent-core";
-    import { getModel } from "@mariozechner/pi-ai";
+    import { Agent } from "@earendil-works/pi-agent-core";
+    import { getModel } from "@earendil-works/pi-ai";
 
     const agent = new Agent({
       initialState: {
@@ -184,7 +184,7 @@ interface ArtifactMessage {
 }
 
 // TypeScript declaration merging
-declare module "@mariozechner/pi-agent-core" {
+declare module "@earendil-works/pi-agent-core" {
   interface CustomAgentMessages {
     "artifact": ArtifactMessage;
   }
@@ -527,7 +527,7 @@ function createExtractDocumentTool(
 Pi-web-ui declares these custom agent message types:
 
 ```typescript
-declare module "@mariozechner/pi-agent-core" {
+declare module "@earendil-works/pi-agent-core" {
   interface CustomAgentMessages {
     "user-with-attachments": {
       role: "user-with-attachments";
@@ -579,7 +579,7 @@ setLanguage(lang: string): void;
 Pi-web-ui uses Tailwind CSS compiled into `dist/app.css`. Import it in your HTML:
 
 ```html
-<link rel="stylesheet" href="node_modules/@mariozechner/pi-web-ui/dist/app.css">
+<link rel="stylesheet" href="node_modules/@earendil-works/pi-web-ui/dist/app.css">
 ```
 
 Light/dark theme is controlled via CSS class on the root element:
@@ -597,7 +597,7 @@ document.documentElement.classList.toggle("dark");
 `ModelSelector.open()` accepts an optional `allowedProviders` filter to restrict which providers are shown (v0.58.4+):
 
 ```typescript
-import { ModelSelector } from "@mariozechner/pi-web-ui";
+import { ModelSelector } from "@earendil-works/pi-web-ui";
 
 // Show only specific providers
 ModelSelector.open({
@@ -613,7 +613,7 @@ Model search uses **subsequence-based fuzzy matching** (v0.58.4+), replacing the
 `SettingsDialog.open()` accepts an `onClose` callback (v0.58.4+):
 
 ```typescript
-import { SettingsDialog } from "@mariozechner/pi-web-ui";
+import { SettingsDialog } from "@earendil-works/pi-web-ui";
 
 SettingsDialog.open({
   agent,

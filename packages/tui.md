@@ -1,6 +1,6 @@
-# @mariozechner/pi-tui
+# @earendil-works/pi-tui
 
-**Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-tui)
+**Version:** 0.74.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@earendil-works/pi-tui)
 
 Low-level terminal UI toolkit with differential rendering, Kitty graphics protocol, IME support, and a rich component library.
 
@@ -9,7 +9,7 @@ Low-level terminal UI toolkit with differential rendering, Kitty graphics protoc
 ## Installation
 
 ```bash
-npm install @mariozechner/pi-tui
+npm install @earendil-works/pi-tui
 ```
 
 **Peer dependencies:** None required.
@@ -23,8 +23,10 @@ npm install koffi  # FFI bindings for native features
 
 ## Quick Start
 
+The current constructor style uses an explicit terminal and positional component constructors. Older object-constructor snippets below are historical and should be cross-checked against `packages/tui/README.md` before copy/paste.
+
 ```typescript
-import { TUI, Text, Input, Box } from "@mariozechner/pi-tui";
+import { TUI, Text, Input, Box } from "@earendil-works/pi-tui";
 
 const tui = new TUI();
 
@@ -493,7 +495,7 @@ class CombinedAutocompleteProvider implements AutocompleteProvider {
 Pi-tui ships a file path autocomplete provider that uses `fd` for fast file discovery:
 
 ```typescript
-import { createPathAutocompleteProvider } from "@mariozechner/pi-tui";
+import { createPathAutocompleteProvider } from "@earendil-works/pi-tui";
 
 const pathProvider = createPathAutocompleteProvider({
   cwd: process.cwd(),

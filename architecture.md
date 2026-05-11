@@ -8,35 +8,32 @@ Pi is a TypeScript monorepo (`pi-mono`) using npm workspaces. All packages share
 
 ```
 Foundation Layer
-└── @mariozechner/pi-ai
+└── @earendil-works/pi-ai
     Unified streaming API over 23+ LLM providers
     Model catalog, token/cost tracking, OAuth utilities
     9 distinct wire protocol implementations
 
 Infrastructure Layer
-├── @mariozechner/pi-agent-core
+├── @earendil-works/pi-agent-core
 │   Stateless agentLoop() + stateful Agent class
 │   Tool execution loop, lifecycle events
 │   Parallel/sequential tool execution
 │
-└── @mariozechner/pi-tui
+└── @earendil-works/pi-tui
     Terminal UI with differential rendering
     Overlay system, editor, input, markdown rendering
 
 Application Layer
-├── @mariozechner/pi-coding-agent  (pi binary)
+├── @earendil-works/pi-coding-agent  (pi binary)
 │   Interactive CLI, AgentSession, SessionManager
 │   ExtensionRunner, SettingsManager, package management
 │
-├── @mariozechner/pi-web-ui
+├── @earendil-works/pi-web-ui
 │   Browser web components for AI chat
 │   IndexedDB storage, artifact system, tool renderers
 │
-├── @mariozechner/pi-mom
-│   Slack bot, delegates to coding-agent core
-│
-└── @mariozechner/pi-pods
-    CLI for vLLM GPU pod management
+└── Historical packages removed before v0.70.0:
+    @mariozechner/pi-mom and legacy pods package
 ```
 
 ---
@@ -90,7 +87,6 @@ AgentEvent stream → TUI rendering (pi-tui differential render)
 | `anthropic-messages` | Anthropic Messages API | anthropic, github-copilot, kimi-for-coding |
 | `bedrock-converse-stream` | AWS Bedrock Converse | amazon-bedrock |
 | `google-generative-ai` | Google Generative AI | google |
-| `google-gemini-cli` | Gemini CLI OAuth | google-gemini-cli |
 | `google-vertex` | Vertex AI | google-vertex |
 | `mistral-conversations` | Mistral native SDK | mistral |
 | `azure-openai-responses` | Azure OpenAI Responses | azure-openai-responses |
@@ -188,9 +184,8 @@ Prompt → [UserMessage]
 
 ```
 ~/.pi/agent/sessions/
-└── <session-id>/
-    ├── session.jsonl       # Append-only conversation history
-    └── metadata.json       # Title, timestamps, parent reference
+└── <encoded-cwd>/
+    └── <timestamp>_<uuid>.jsonl  # Append-only conversation tree
 ```
 
 Each line in `session.jsonl` is one of:
@@ -298,4 +293,4 @@ All packages extend `tsconfig.base.json`:
 ```
 
 Build order (enforced by monorepo build script):
-`tui → ai → agent → coding-agent → mom → web-ui → pods`
+`tui -> ai -> agent -> coding-agent -> web-ui`

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Pi-Mono uses **lockstep versioning** across all packages. Every release bumps all packages to the same version number simultaneously, even if a particular package has no changes in that release. This means `@mariozechner/pi-coding-agent`, `@mariozechner/pi-ai`, `@mariozechner/pi-tui`, `@mariozechner/pi-agent-core` (formerly `@mariozechner/pi-agent`), and `@mariozechner/pi-web-ui` always share the same version. (`@mariozechner/pi-mom` and `@mariozechner/pi-pods` were removed from the monorepo before v0.70.0.)
+Pi-Mono uses **lockstep versioning** across all active packages. Every release bumps all active packages to the same version number simultaneously, even if a particular package has no changes in that release. Starting with v0.74.0, `@earendil-works/pi-coding-agent`, `@earendil-works/pi-ai`, `@earendil-works/pi-tui`, `@earendil-works/pi-agent-core`, and `@earendil-works/pi-web-ui` share the same version. The old `@mariozechner/*` active packages remain published for older installs and stop at v0.73.1. (`@mariozechner/pi-mom` and the pods package were removed from the monorepo before v0.70.0.)
 
-As of 2026-05-02, the project has **267 release tags** spanning from `v0.0.1` to `v0.72.1`, with the first public release (v0.10.0) on 2025-11-25 and the latest (v0.72.1) on 2026-05-02 -- roughly 5 months of rapid development.
+As of 2026-05-11, the local repository has **269 tags** spanning from `v0.0.1` to `v0.74.0`, with the first public release (v0.10.0) on 2025-11-25 and the latest release (v0.74.0) on 2026-05-07.
 
 ---
 
@@ -22,7 +22,7 @@ These early tags represent pre-release development. The `pi-ai` package had its 
 
 ### v0.10.0 (2025-11-25) -- Initial public release
 - **coding-agent**: Interactive TUI with streaming responses, session management, tools (read, write, edit, bash, glob, grep, think), thinking mode for Claude, `@` file autocompletion, `/export` HTML export, `/model` runtime switching, Anthropic/OpenAI/Google provider support
-- First public npm release of `@mariozechner/pi-coding-agent`
+- First public npm release of `@earendil-works/pi-coding-agent`
 
 ### v0.10.1 (2025-11-25)
 - Custom model configuration via `~/.pi/models.json`
@@ -130,9 +130,9 @@ These early tags represent pre-release development. The `pi-ai` package had its 
 
 ### v0.31.0 (2026-01-02) -- Major architectural release
 - **Session trees**: Tree structure with `id`/`parentId`, in-place branching via `/tree`
-- **Breaking (pi-ai)**: Agent API moved to `@mariozechner/pi-agent-core`
+- **Breaking (pi-ai)**: Agent API moved to `@earendil-works/pi-agent-core`
 - **Breaking (agent-core)**: Transport abstraction removed, `AppMessage` renamed to `AgentMessage`
-- **Breaking (web-ui)**: Agent class moved to `@mariozechner/pi-agent-core`
+- **Breaking (web-ui)**: Agent class moved to `@earendil-works/pi-agent-core`
 - **Breaking (mom)**: Multiple type and API renames
 - **Breaking (agent)**: Queue API replaced with `steer()`/`followUp()`
 - Structured compaction with file tracking
@@ -272,7 +272,7 @@ These early tags represent pre-release development. The `pi-ai` package had its 
 - Tool `promptSnippet` and `promptGuidelines` for system prompt customization
 
 ### v0.56.0 (2026-03-04)
-- **Breaking (pi-ai)**: OAuth exports moved to `@mariozechner/pi-ai/oauth` subpath
+- **Breaking (pi-ai)**: OAuth exports moved to `@earendil-works/pi-ai/oauth` subpath
 - OpenCode Go provider, `branchSummary.skipPrompt` setting
 - `gemini-3.1-flash-lite-preview` model support
 
@@ -699,6 +699,39 @@ The most significant breaking changes occurred at:
 - **v0.70.1**: DeepSeek built-in provider added (`DEEPSEEK_API_KEY`)
 - **v0.71.0**: `google-gemini-cli` and `google-antigravity` providers fully removed; `pi-mom` and `pi-pods` removed from monorepo; `reasoningEffortMap` compat field replaced by `Model.thinkingLevelMap`
 - **v0.72.0**: `OpenAICompletionsCompat.reasoningEffortMap` replaced by `Model.thinkingLevelMap`; `supportsXhigh()` removed — use `getSupportedThinkingLevels()`/`clampThinkingLevel()`
+- **v0.73.0**: Xiaomi provider split between API billing and regional token-plan providers; incremental bash streaming and compact read rendering in the coding agent; exact-match fuzzy ranking in the TUI
+- **v0.73.1**: Final old-scope active package release; added scope-migration self-update support, OAuth login choices, JSONC-style `models.json`, upstream `jiti` 2.7 extension loading, and several provider/terminal fixes
+- **v0.74.0**: First `@earendil-works/*` release; repository links and package references moved to `earendil-works/pi-mono`
+
+## Era 9: Scope Migration and Final Old-Scope Releases (v0.73.0 -- v0.74.0, 2026-05-04 to 2026-05-07)
+
+### v0.73.0 (2026-05-04)
+
+- **ai / coding-agent**: Switched the built-in `xiaomi` provider from Token Plan AMS to Xiaomi API billing; added `xiaomi-token-plan-cn`, `xiaomi-token-plan-ams`, and `xiaomi-token-plan-sgp` with separate environment variables.
+- **ai**: Added session-scoped resource cleanup helpers; fixed generated OpenAI-compatible model metadata for Qwen 3.5/3.6 and MiniMax M2.7; fixed Bedrock Claude Opus 4.7 `xhigh` handling; added OpenAI Codex WebSocket fallback diagnostics.
+- **coding-agent**: Added incremental bash output streaming, compact `read` rendering, terminal lost-input exit behavior, and exact-match fuzzy ranking.
+- **tui**: Fixed selector/autocomplete fuzzy ranking to prioritize exact matches.
+
+### v0.73.1 (2026-05-07)
+
+- **coding-agent**: Added self-update support for the package scope migration, interactive OAuth login provider choices, JSONC-style `models.json` parsing, upstream `jiti` 2.7 extension loading, Wayland clipboard fixes, HTML session export cleanup, and several OpenAI/Codex/Kimi fixes.
+- **ai**: Added OAuth login flow metadata; fixed OpenAI-compatible reasoning text streaming, Codex OAuth stderr writes, interleaved content/tool-call deltas, Kimi K2 P6 alias normalization, and non-empty Codex system prompts.
+- **tui**: Fixed wrapped OSC 8 hyperlinks, Kitty inline image redraw bounds and ids, and disabled inline images in cmux terminals.
+
+### v0.74.0 (2026-05-07)
+
+- **release-wide**: Moved repository links and package references to `earendil-works/pi-mono` and `@earendil-works/*`.
+- **npm**: `@earendil-works/pi-coding-agent`, `@earendil-works/pi-ai`, `@earendil-works/pi-agent-core`, `@earendil-works/pi-tui`, and `@earendil-works/pi-web-ui` are published at `0.74.0` with `latest` dist-tags.
+- **compatibility**: Old `@mariozechner/*` active packages remain published for older installs and stop at `0.73.1`.
+
+## Main After v0.74.0 (Unreleased)
+
+Do not document these as released features until a post-v0.74.0 tag exists:
+
+- `@earendil-works/pi-ai`: Together AI provider, OpenRouter image generation APIs, Fireworks Anthropic compatibility/session-affinity fixes, OpenAI Responses `reasoning.effort: "none"` when thinking is off, and Bun WebSocket proxy handling for Codex.
+- `@earendil-works/pi-agent-core`: `AgentHarness`, session repositories/storage, execution environments, compaction, resources, skills, prompt templates, stream configuration, provider hooks, and `prepareNextTurn` support.
+- `@earendil-works/pi-coding-agent`: Together AI login/default model wiring, package-scope theme sharing, macOS Option-key hints, OSC 8 update changelog links, resource path disambiguation, renamed npm self-update detection, Termux chooser flag docs, and `.agents` skill provenance preservation.
+- `@earendil-works/pi-tui`: Markdown list indentation/text-token wrapping changes.
 
 ## Notable Model Milestones
 

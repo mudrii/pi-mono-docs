@@ -1,6 +1,6 @@
 # pi-ai: Unified LLM Abstraction Layer
 
-`@mariozechner/pi-ai` (v0.72.1) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across 26+ providers. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
+`@earendil-works/pi-ai` (v0.74.0) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across released provider IDs. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
 
 Only models that support tool calling (function calling) are included in the catalog, since tool use is essential for the agentic workflows that the coding-agent package builds on top of.
 
@@ -34,7 +34,7 @@ The library is built around several core principles:
 
 2. **Two-tier API surface.** Provider-native functions (`stream`/`complete`) expose every knob a provider offers. Provider-agnostic functions (`streamSimple`/`completeSimple`) accept a single `reasoning` level and map it to provider-specific parameters automatically.
 
-3. **Lazy loading.** Provider SDK modules are loaded on first use via dynamic `import()`, so importing `@mariozechner/pi-ai` does not pull in the Anthropic, OpenAI, Google, Bedrock, or Mistral SDKs until a request targets that provider.
+3. **Lazy loading.** Provider SDK modules are loaded on first use via dynamic `import()`, so importing `@earendil-works/pi-ai` does not pull in the Anthropic, OpenAI, Google, Bedrock, or Mistral SDKs until a request targets that provider.
 
 4. **Browser and Node.** The library works in browsers (API keys passed explicitly) and Node.js (keys resolved from environment variables). Bedrock and OAuth login flows are Node-only.
 
@@ -48,7 +48,7 @@ All core types are defined in `packages/ai/src/types.ts`.
 
 ### Api
 
-The `Api` type identifies a wire protocol. Ten built-in protocols are defined:
+The `Api` type identifies a chat wire protocol. Nine built-in chat protocols are released in v0.74.0:
 
 ```typescript
 type KnownApi =
@@ -66,6 +66,8 @@ type Api = KnownApi | (string & {});
 ```
 
 The `(string & {})` union allows custom API identifiers while preserving IDE auto-complete for known values.
+
+Current `main` after v0.74.0 also contains an unreleased separate image API surface with `openrouter-images`; image APIs are not part of the v0.74.0 released chat protocol set.
 
 ### Model
 
@@ -152,14 +154,17 @@ interface StreamOptions {
   onPayload?: (payload: unknown, model: Model<Api>) => unknown | undefined | Promise<unknown | undefined>;
   onResponse?: (response: Response) => void;
   headers?: Record<string, string>;
-  maxRetryDelayMs?: number;
+  timeoutMs?: number;
+  maxRetries?: number;
   metadata?: Record<string, unknown>;
 }
 ```
 
 | Field | Description |
 |-------|-------------|
-| `onResponse` | Added in v0.67.6. Called after each HTTP response, before the stream is consumed. Inspect provider HTTP status codes and headers. |
+| `transport` | `"sse"`, `"websocket"`, `"websocket-cached"`, or `"auto"`. Providers that do not support a transport ignore it. |
+| `onResponse` | Called after each HTTP response, before the stream is consumed. Current signature is `(response: ProviderResponse, model: Model<Api>)`. |
+| `timeoutMs` / `maxRetries` | Passed to provider SDKs that support request timeouts and retries. |
 
 ### SimpleStreamOptions
 
@@ -230,7 +235,7 @@ Provider modules are not statically imported. Instead, `src/providers/register-b
 3. The provider's real stream function is called and its events are forwarded to the outer stream.
 4. Subsequent calls reuse the cached module promise.
 
-This design means importing `@mariozechner/pi-ai` does not load any provider SDK. The Anthropic SDK, OpenAI SDK, Google GenAI SDK, etc. are only loaded when a request first targets that API.
+This design means importing `@earendil-works/pi-ai` does not load any provider SDK. The Anthropic SDK, OpenAI SDK, Google GenAI SDK, etc. are only loaded when a request first targets that API.
 
 ### Registration
 
@@ -263,7 +268,7 @@ The model catalog (`models.generated.ts`) defines 26+ providers. Each maps to on
 | `azure-openai-responses` | `azure-openai-responses` | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_BASE_URL` or `AZURE_OPENAI_RESOURCE_NAME` |
 | `cerebras` | `openai-completions` | `CEREBRAS_API_KEY` |
 | `cloudflare-workers-ai` | `openai-completions` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` — OpenAI-compatible streaming (v0.70.6) |
-| `cloudflare` | `openai-completions` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_GATEWAY_ID` — Cloudflare AI Gateway; routes OpenAI, Anthropic, Workers AI (v0.71.0) |
+| `cloudflare-ai-gateway` | `openai-completions` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_GATEWAY_ID` — Cloudflare AI Gateway; routes OpenAI, Anthropic, Workers AI (v0.71.0) |
 | `deepseek` | `openai-completions` | `DEEPSEEK_API_KEY` — V4 Flash, V4 Pro; `xhigh` maps to DeepSeek `max` reasoning effort (v0.70.1) |
 | `fireworks` | `anthropic-messages` | `FIREWORKS_API_KEY` — Anthropic-compatible Messages API (added v0.68.1) |
 | `github-copilot` | `anthropic-messages` / `openai-responses` | OAuth (`COPILOT_GITHUB_TOKEN` / `GH_TOKEN` / `GITHUB_TOKEN`) |
@@ -275,7 +280,8 @@ The model catalog (`models.generated.ts`) defines 26+ providers. Each maps to on
 | `minimax` | `openai-completions` | `MINIMAX_API_KEY` — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (older direct IDs removed in v0.63.0) |
 | `minimax-cn` | `openai-completions` | `MINIMAX_CN_API_KEY` — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (older direct IDs removed in v0.63.0) |
 | `mistral` | `mistral-conversations` | `MISTRAL_API_KEY` |
-| `moonshot` | `openai-completions` | `MOONSHOT_API_KEY` — Moonshot AI; OpenAI-compatible (v0.71.0) |
+| `moonshotai` | `openai-completions` | `MOONSHOT_API_KEY` — Moonshot AI; OpenAI-compatible (v0.71.0) |
+| `moonshotai-cn` | `openai-completions` | `MOONSHOT_API_KEY` — Moonshot AI China endpoint |
 | `openai` | `openai-responses` | `OPENAI_API_KEY` |
 | `openai-codex` | `openai-codex-responses` | OAuth |
 | `opencode` | `openai-completions` | `OPENCODE_API_KEY` |
@@ -294,8 +300,8 @@ Additionally, any OpenAI-compatible API (Ollama, vLLM, LM Studio, SGLang) can be
 - **v0.70.1:** Added `deepseek` provider — built-in OpenAI-compatible provider with V4 Flash and V4 Pro models. `xhigh` thinking level maps to DeepSeek `max` reasoning effort.
 - **v0.70.6:** Added `cloudflare-workers-ai` provider — built-in OpenAI-compatible streaming provider.
 - **v0.71.0 (breaking):** Removed `google-gemini-cli` and `google-antigravity` providers from the codebase entirely.
-- **v0.71.0:** Added `cloudflare` provider (Cloudflare AI Gateway) — routes requests to OpenAI, Anthropic, and Workers AI through the Cloudflare gateway.
-- **v0.71.0:** Added `moonshot` provider — Moonshot AI, OpenAI-compatible with default model resolution and `/login` display.
+- **v0.71.0:** Added `cloudflare-ai-gateway` provider (Cloudflare AI Gateway) — routes requests to OpenAI, Anthropic, and Workers AI through the Cloudflare gateway.
+- **v0.71.0:** Added `moonshotai` provider — Moonshot AI, OpenAI-compatible with default model resolution and `/login` display.
 - **v0.71.0:** Added `mistral-medium-3-5` model to the `mistral` provider.
 - **v0.71.0:** `AssistantMessage.responseModel` added to the `openai-completions` path — surfaces the concrete `chunk.model` when it differs from the requested ID (e.g., OpenRouter `auto` → resolved model).
 - **v0.72.0 (breaking):** `reasoningEffortMap` in `OpenAICompletionsCompat.compat` replaced by top-level `Model.thinkingLevelMap`. See [thinkingLevelMap Migration](#thinkinglevelmap-migration-v0720).
@@ -449,7 +455,7 @@ For Gemini 3 models, ThinkingLevel maps to Google's native `ThinkingLevel` enum 
 if (supportsXhigh(model)) { ... }
 
 // After
-import { getSupportedThinkingLevels, clampThinkingLevel } from "@mariozechner/pi-ai";
+import { getSupportedThinkingLevels, clampThinkingLevel } from "@earendil-works/pi-ai";
 
 // Check whether a model supports xhigh
 if (getSupportedThinkingLevels(model).includes("xhigh")) { ... }
@@ -464,7 +470,7 @@ const effective = clampThinkingLevel(model, "xhigh"); // returns "high" if xhigh
 
 ## OAuth Support
 
-OAuth authentication is handled by the `@mariozechner/pi-ai/oauth` entry point (defined in `src/utils/oauth/`). The library does not store credentials -- that is the caller's responsibility.
+OAuth authentication is handled by the `@earendil-works/pi-ai/oauth` entry point (defined in `src/utils/oauth/`). The library does not store credentials -- that is the caller's responsibility.
 
 ### Supported OAuth Providers
 
@@ -499,9 +505,9 @@ registerOAuthProvider(p)   // register custom provider
 The package includes a CLI binary (`pi-ai`) for interactive OAuth login:
 
 ```bash
-npx @mariozechner/pi-ai login              # interactive provider selection
-npx @mariozechner/pi-ai login anthropic    # login to specific provider
-npx @mariozechner/pi-ai list               # list available providers
+npx @earendil-works/pi-ai login              # interactive provider selection
+npx @earendil-works/pi-ai login anthropic    # login to specific provider
+npx @earendil-works/pi-ai list               # list available providers
 ```
 
 Credentials are saved to `auth.json` in the current directory.
@@ -618,7 +624,7 @@ The OpenAI Responses provider supports `serviceTier` (`"flex"`, `"priority"`, or
 
 ### TypeBox 1.x Migration (v0.69.0)
 
-As of v0.69.0, `@mariozechner/pi-ai` migrated from `@sinclair/typebox` 0.34.x + AJV to `typebox` 1.x with TypeBox's built-in validator. Tool argument validation now works in eval-restricted runtimes (Cloudflare Workers) — previously it was silently skipped.
+As of v0.69.0, `@earendil-works/pi-ai` migrated from `@sinclair/typebox` 0.34.x + AJV to `typebox` 1.x with TypeBox's built-in validator. Tool argument validation now works in eval-restricted runtimes (Cloudflare Workers) — previously it was silently skipped.
 
 **Migration:** Install and import from `typebox` instead of `@sinclair/typebox`. Retest coercion-sensitive tool paths — they now go through TypeBox-native validation instead of AJV.
 
@@ -901,7 +907,7 @@ Returns an array of environment variable names (e.g., `["ANTHROPIC_API_KEY", "OP
 
 ## ModelRegistry Breaking Changes
 
-`ModelRegistry` is defined in `@mariozechner/pi-agent-core` (the coding-agent package), not in `@mariozechner/pi-ai` itself. Consumers who use `ModelRegistry` for API key resolution should note these changes.
+`ModelRegistry` is defined in `@earendil-works/pi-agent-core` (the coding-agent package), not in `@earendil-works/pi-ai` itself. Consumers who use `ModelRegistry` for API key resolution should note these changes.
 
 **v0.63.0:** `ModelRegistry.getApiKey(model)` was removed. Use `getApiKeyAndHeaders(model)` instead, which returns `{ apiKey, headers }`:
 
@@ -941,7 +947,7 @@ import {
   fauxText,
   fauxThinking,
   fauxToolCall,
-} from "@mariozechner/pi-ai";
+} from "@earendil-works/pi-ai";
 
 registerFauxProvider();
 // Use provider: "faux" when constructing a model
@@ -953,11 +959,11 @@ All faux helpers are exported from the package root via `export * from "./provid
 
 ## Package Metadata
 
-- **Package name**: `@mariozechner/pi-ai`
-- **Version**: 0.72.1
+- **Package name**: `@earendil-works/pi-ai`
+- **Version**: 0.74.0
 - **License**: MIT
 - **Author**: Mario Zechner
-- **Repository**: `github.com/badlogic/pi-mono` (directory: `packages/ai`)
+- **Repository**: `github.com/earendil-works/pi-mono` (directory: `packages/ai`)
 - **Node requirement**: >= 20.0.0
 - **Module format**: ESM only (`"type": "module"`)
 - **Key dependencies**: `@anthropic-ai/sdk`, `openai`, `@google/genai`, `@mistralai/mistralai`, `@aws-sdk/client-bedrock-runtime`, `typebox`, `partial-json`

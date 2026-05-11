@@ -1,8 +1,28 @@
 # Changelog
 
-All pi-mono releases follow lockstep versioning — all packages (`pi-ai`, `pi-tui`, `pi-agent-core`, `pi-coding-agent`, `pi-web-ui`, `pi-mom`, `pi-pods`) are released together at the same version.
+All current pi-mono releases follow lockstep versioning for the five active packages (`pi-ai`, `pi-tui`, `pi-agent-core`, `pi-coding-agent`, `pi-web-ui`). Starting with v0.74.0, active packages are published under `@earendil-works/*`.
 
 ---
+
+## v0.73.0-v0.74.0 (2026-05-04 to 2026-05-07)
+
+### v0.74.0 - 2026-05-07
+- **Release-wide**: Updated repository links and package references for the move to `earendil-works/pi-mono` and `@earendil-works/*` package scopes.
+
+### v0.73.1 - 2026-05-07
+- `coding-agent`: Added self-update support for the package scope migration.
+- `coding-agent`: Added interactive OAuth login choices.
+- `coding-agent`: Changed extension loading to upstream `jiti` 2.7.
+- `coding-agent`: Changed `models.json` parsing to allow comments and trailing commas.
+- `coding-agent` / `ai`: Fixed OpenAI Codex OAuth stderr writes, Codex non-empty system prompts, interleaved content/tool-call deltas, and Kimi K2 P6 alias resolution.
+- `tui`: Fixed OSC 8 hyperlinks and Kitty inline image rendering edge cases.
+
+### v0.73.0 - 2026-05-04
+- **Breaking** `ai` / `coding-agent`: Switched `xiaomi` from Token Plan AMS to API billing; Token Plan users must use `xiaomi-token-plan-cn`, `xiaomi-token-plan-ams`, or `xiaomi-token-plan-sgp`.
+- `ai`: Added session-scoped resource cleanup helpers.
+- `ai`: Fixed OpenCode Go model metadata, Bedrock Claude Opus 4.7 `xhigh`, and Codex WebSocket fallback diagnostics.
+- `coding-agent`: Added incremental bash output streaming and compact `read` rendering.
+- `tui`: Fixed fuzzy ranking to prioritize exact matches.
 
 ## v0.70.0–v0.72.1 (2026-04-23 to 2026-05-02)
 

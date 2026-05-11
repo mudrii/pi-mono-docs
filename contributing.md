@@ -39,7 +39,7 @@ This exists because AI makes it trivial to generate plausible-looking but low-qu
 ### Clone and Install
 
 ```bash
-git clone https://github.com/badlogic/pi-mono
+git clone https://github.com/earendil-works/pi-mono
 cd pi-mono
 npm install
 ```
@@ -107,11 +107,11 @@ All packages share the same version number. Do not bump version numbers in PRs �
 
 ```
 packages/
-├── ai/            # @mariozechner/pi-ai
-├── tui/           # @mariozechner/pi-tui
-├── agent-core/    # @mariozechner/pi-agent-core
-├── coding-agent/  # @mariozechner/pi-coding-agent
-├── web-ui/        # @mariozechner/pi-web-ui
+├── ai/            # @earendil-works/pi-ai
+├── tui/           # @earendil-works/pi-tui
+├── agent-core/    # @earendil-works/pi-agent-core
+├── coding-agent/  # @earendil-works/pi-coding-agent
+├── web-ui/        # @earendil-works/pi-web-ui
 ├── mom/           # @mariozechner/pi-mom
 └── pods/          # @mariozechner/pi-pods
 ```
@@ -171,7 +171,7 @@ PRs that bloat the core are declined regardless of code quality.
 
 ## Community
 
-- **GitHub:** [github.com/badlogic/pi-mono](https://github.com/badlogic/pi-mono)
+- **GitHub:** [github.com/earendil-works/pi-mono](https://github.com/earendil-works/pi-mono)
 - **Discord:** [discord.com/invite/nKXTsAcmbT](https://discord.com/invite/nKXTsAcmbT)
 - **npm:** [npmjs.com/~mariozechner](https://www.npmjs.com/~mariozechner)
 - **X/Twitter:** [@badlogicgames](https://x.com/badlogicgames)

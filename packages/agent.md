@@ -1,15 +1,15 @@
-# @mariozechner/pi-agent-core
+# @earendil-works/pi-agent-core
 
-**Version:** 0.69.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@mariozechner/pi-agent-core)
+**Version:** 0.74.0 · **License:** MIT · [npm](https://www.npmjs.com/package/@earendil-works/pi-agent-core)
 
-Stateful agent runtime with tool execution, event streaming, and message queue management. Built on top of `@mariozechner/pi-ai`.
+Stateful agent runtime with tool execution, event streaming, and message queue management. Built on top of `@earendil-works/pi-ai`.
 
 ---
 
 ## Installation
 
 ```bash
-npm install @mariozechner/pi-agent-core @mariozechner/pi-ai typebox
+npm install @earendil-works/pi-agent-core @earendil-works/pi-ai typebox
 ```
 
 ---
@@ -17,8 +17,8 @@ npm install @mariozechner/pi-agent-core @mariozechner/pi-ai typebox
 ## Quick Start
 
 ```typescript
-import { Agent } from "@mariozechner/pi-agent-core";
-import { getModel } from "@mariozechner/pi-ai";
+import { Agent } from "@earendil-works/pi-agent-core";
+import { getModel } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
 
 const model = getModel("anthropic", "claude-opus-4-6");
@@ -346,7 +346,7 @@ const agent = new Agent({
 Extend agent messages via declaration merging:
 
 ```typescript
-declare module "@mariozechner/pi-agent-core" {
+declare module "@earendil-works/pi-agent-core" {
   interface CustomAgentMessages {
     screenshot: {
       role: "screenshot";
@@ -396,7 +396,7 @@ const agent = new Agent({
 For full control without the `Agent` class:
 
 ```typescript
-import { agentLoop, runAgentLoop } from "@mariozechner/pi-agent-core";
+import { agentLoop, runAgentLoop } from "@earendil-works/pi-agent-core";
 
 // Event-based iteration
 const stream = agentLoop(
@@ -429,7 +429,7 @@ await runAgentLoop(
 Route all LLM calls through a proxy server:
 
 ```typescript
-import { streamProxy } from "@mariozechner/pi-agent-core";
+import { streamProxy } from "@earendil-works/pi-agent-core";
 
 const agent = new Agent({
   streamFn: (model, context, options) =>

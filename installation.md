@@ -12,7 +12,7 @@
 ## Global npm Install (Recommended)
 
 ```bash
-npm install -g @mariozechner/pi-coding-agent
+npm install -g @earendil-works/pi-coding-agent
 pi
 ```
 
@@ -22,7 +22,7 @@ The `pi` command is immediately available after install.
 
 ## Binary Download
 
-Pre-compiled standalone binaries are available on the [GitHub releases page](https://github.com/badlogic/pi-mono/releases). No Node.js installation required.
+Pre-compiled standalone binaries are available on the [GitHub releases page](https://github.com/earendil-works/pi-mono/releases). No Node.js installation required.
 
 Available platforms:
 - macOS arm64 (Apple Silicon)
@@ -103,7 +103,7 @@ Standard npm install works. For musl/Alpine systems (Docker), use the `arm64-mus
 
 ```bash
 pkg install nodejs termux-api git
-npm install -g @mariozechner/pi-coding-agent
+npm install -g @earendil-works/pi-coding-agent
 mkdir -p ~/.pi/agent
 echo "You are running on Android in Termux." > ~/.pi/agent/AGENTS.md
 pi
@@ -152,7 +152,7 @@ pi --offline
 ## Building from Source
 
 ```bash
-git clone https://github.com/badlogic/pi-mono.git
+git clone https://github.com/earendil-works/pi-mono.git
 cd pi-mono
 npm install
 npm run build
@@ -172,7 +172,7 @@ npm run build:binary
 ## Update
 
 ```bash
-npm update -g @mariozechner/pi-coding-agent
+npm update -g @earendil-works/pi-coding-agent
 # or
 pi update
 ```
@@ -184,7 +184,7 @@ pi update
 ```bash
 pi uninstall
 # or
-npm uninstall -g @mariozechner/pi-coding-agent
+npm uninstall -g @earendil-works/pi-coding-agent
 ```
 
 ---
@@ -193,7 +193,7 @@ npm uninstall -g @mariozechner/pi-coding-agent
 
 | Path | Purpose |
 |------|---------|
-| `~/.pi/settings.json` | Global settings |
+| `~/.pi/agent/settings.json` | Global settings |
 | `.pi/settings.json` | Project-local settings |
 | `~/.pi/agent/auth.json` | API keys and OAuth tokens |
 | `~/.pi/agent/models.json` | Custom model definitions and provider API keys |

@@ -2,7 +2,7 @@
 
 Pi's extension system enables deep customization of the agent through TypeScript modules that can register tools, commands, keyboard shortcuts, event hooks, UI components, and model providers.
 
-Package: `@mariozechner/pi-coding-agent` v0.72.1
+Package: `@earendil-works/pi-coding-agent` v0.74.0
 
 ## Architecture
 
@@ -11,7 +11,7 @@ Package: `@mariozechner/pi-coding-agent` v0.72.1
 Every extension is a TypeScript module whose default export is a **factory function**. The factory receives an `ExtensionAPI` object (`pi`) and uses it to register capabilities:
 
 ```ts
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
@@ -30,18 +30,18 @@ type ExtensionFactory = (pi: ExtensionAPI) => void | Promise<void>;
 
 ### jiti Loading
 
-Extensions are loaded via `@mariozechner/jiti`, a forked version of jiti that supports `virtualModules` for compiled Bun binaries. This allows extensions to be written in TypeScript and loaded at runtime without a build step.
+Extensions are loaded via upstream `jiti` 2.7. This allows extensions to be written in TypeScript and loaded at runtime without a build step.
 
 In development (Node.js), jiti uses **aliases** to resolve workspace packages to their filesystem locations. In compiled Bun binary mode, **virtualModules** provides pre-bundled packages directly:
 
 | Package | Available via virtualModules |
 |---------|------------------------------|
 | `@sinclair/typebox` | Schema definitions for tool parameters |
-| `@mariozechner/pi-agent-core` | Core agent types (`AgentMessage`, etc.) |
-| `@mariozechner/pi-tui` | TUI components (`Component`, `EditorComponent`, `KeyId`) |
-| `@mariozechner/pi-ai` | AI provider types (`Model`, `Api`, `Type`) |
-| `@mariozechner/pi-ai/oauth` | OAuth provider registration |
-| `@mariozechner/pi-coding-agent` | The coding agent itself (extension types, helpers) |
+| `@earendil-works/pi-agent-core` | Core agent types (`AgentMessage`, etc.) |
+| `@earendil-works/pi-tui` | TUI components (`Component`, `EditorComponent`, `KeyId`) |
+| `@earendil-works/pi-ai` | AI provider types (`Model`, `Api`, `Type`) |
+| `@earendil-works/pi-ai/oauth` | OAuth provider registration |
+| `@earendil-works/pi-coding-agent` | The coding agent itself (extension types, helpers) |
 
 Each extension is loaded with `moduleCache: false` so that `/reload` picks up changes without restarting.
 
@@ -443,7 +443,7 @@ earlier handlers, but does NOT reflect provider-level payload modifications.
 Tool call events are typed per built-in tool (`BashToolCallEvent`, `ReadToolCallEvent`, etc.) with type guards:
 
 ```ts
-import { isToolCallEventType } from "@mariozechner/pi-coding-agent";
+import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
 
 pi.on("tool_call", async (event, ctx) => {
   if (isToolCallEventType("bash", event)) {
@@ -559,7 +559,7 @@ ctx.ui.setEditorComponent((tui, theme, keybindings) => {
 Replace the input editor:
 
 ```ts
-import { CustomEditor } from "@mariozechner/pi-coding-agent";
+import { CustomEditor } from "@earendil-works/pi-coding-agent";
 
 class VimEditor extends CustomEditor {
   handleInput(data: string) {
