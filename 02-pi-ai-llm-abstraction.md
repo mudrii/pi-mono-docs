@@ -1,969 +1,691 @@
-# pi-ai: Unified LLM Abstraction Layer
+# pi-ai: Unified LLM Abstraction
 
-`@earendil-works/pi-ai` (v0.74.0) is a unified LLM API library that provides automatic model discovery, provider configuration, token and cost tracking, and context persistence across released provider IDs. It is the foundational AI layer of the Pi-Mono project and is published independently on npm.
-
-Only models that support tool calling (function calling) are included in the catalog, since tool use is essential for the agentic workflows that the coding-agent package builds on top of.
-
-## Table of Contents
-
-- [Design Philosophy](#design-philosophy)
-- [Core Types](#core-types)
-- [Provider Architecture](#provider-architecture)
-- [All Supported Providers](#all-supported-providers)
-- [Streaming Entry Points](#streaming-entry-points)
-- [Event Stream Format](#event-stream-format)
-- [ThinkingLevel Abstraction](#thinkinglevel-abstraction)
-- [OAuth Support](#oauth-support)
-- [Model Catalog](#model-catalog)
-- [Cost Tracking](#cost-tracking)
-- [Tool Validation](#tool-validation)
-- [Provider-Specific Options](#provider-specific-options)
-- [Cross-Provider Handoffs](#cross-provider-handoffs)
-- [Prompt Caching](#prompt-caching)
-- [Adding a New Provider](#adding-a-new-provider)
-- [ModelRegistry Breaking Changes](#modelregistry-breaking-changes)
-- [Faux Provider](#faux-provider)
+**Package:** `@earendil-works/pi-ai`
+**Version:** 0.74.0
+**Source:** `packages/ai/` in `earendil-works/pi-mono` @ tag `v0.74.0` (commit `1eee081e`)
+**Role:** Provider-agnostic streaming LLM client used by `@earendil-works/pi-tui`, `@earendil-works/pi-cli`, and downstream agent runtimes.
 
 ---
 
-## Design Philosophy
+## 1. What This Package Does
 
-The library is built around several core principles:
+`pi-ai` exposes a single streaming API (`stream`, `complete`, `streamSimple`, `completeSimple`) that drives 31 model providers across 9 wire protocols. A typed `Model` descriptor selects the provider; a registered `ApiProvider` translates the unified `Message[]` history into provider-native requests, normalizes the response stream into an `AssistantMessageEventStream`, and reports cached/uncached token usage with per-million pricing.
 
-1. **Provider-agnostic context.** The `Context` type (system prompt, messages, tools) is serializable JSON. Conversations can be persisted, resumed, or handed off to a different model without transformation by the caller.
+Key design points:
 
-2. **Two-tier API surface.** Provider-native functions (`stream`/`complete`) expose every knob a provider offers. Provider-agnostic functions (`streamSimple`/`completeSimple`) accept a single `reasoning` level and map it to provider-specific parameters automatically.
-
-3. **Lazy loading.** Provider SDK modules are loaded on first use via dynamic `import()`, so importing `@earendil-works/pi-ai` does not pull in the Anthropic, OpenAI, Google, Bedrock, or Mistral SDKs until a request targets that provider.
-
-4. **Browser and Node.** The library works in browsers (API keys passed explicitly) and Node.js (keys resolved from environment variables). Bedrock and OAuth login flows are Node-only.
-
-5. **TypeBox for schemas.** Tool parameter schemas use `typebox` 1.x (migrated from `@sinclair/typebox` 0.34.x in v0.69.0), which produces JSON Schema at runtime and TypeScript types at compile time. The library re-exports `Type`, `Static`, and `TSchema`.
+1. **One message shape, many wires.** `UserMessage | AssistantMessage | ToolResultMessage` (see `packages/ai/src/types.ts:140-233`) is consumed identically by Anthropic Messages, OpenAI Chat Completions, OpenAI Responses, Google GenAI, Vertex, Bedrock Converse, Mistral, Azure, and Codex.
+2. **Lazy provider loading.** Built-in providers register via dynamic `import()` wrappers (`packages/ai/src/providers/register-builtins.ts:1-403`) — SDKs are only loaded when a stream call hits that API.
+3. **Cross-provider continuity.** `transformMessages` (`packages/ai/src/providers/transform-messages.ts:1-220`) rewrites assistant history when handing off between providers so thinking blocks, tool-call IDs, and image content are valid for the receiving model.
+4. **Pluggable.** `registerApiProvider`, `registerFauxProvider`, `registerOAuthProvider`, and `MODELS` extension hooks let downstream code add wire protocols and custom catalogs without forking.
 
 ---
 
-## Core Types
+## 2. Public API Surface
 
-All core types are defined in `packages/ai/src/types.ts`.
+### 2.1 Package exports
 
-### Api
+`packages/ai/package.json` declares the following subpath exports for v0.74.0:
 
-The `Api` type identifies a chat wire protocol. Nine built-in chat protocols are released in v0.74.0:
+| Subpath | Purpose |
+|---|---|
+| `.` | Root entry — re-exports types, `stream`/`complete`, registry, models, OAuth (`packages/ai/src/index.ts:1-43`) |
+| `./anthropic` | `AnthropicOptions`, Anthropic provider module |
+| `./azure-openai-responses` | Azure-flavoured OpenAI Responses |
+| `./google` | Google GenAI (Gemini) provider |
+| `./google-vertex` | Vertex AI provider |
+| `./mistral` | Mistral conversations API |
+| `./openai-codex-responses` | ChatGPT Codex (WebSocket) provider |
+| `./openai-completions` | OpenAI-compatible chat completions (covers xAI, Groq, DeepSeek, etc.) |
+| `./openai-responses` | OpenAI Responses API |
+| `./oauth` | OAuth registry + built-in providers |
+| `./bedrock-provider` | Amazon Bedrock Converse Stream |
 
-```typescript
-type KnownApi =
-  | "openai-completions"
-  | "openai-responses"
-  | "openai-codex-responses"
-  | "azure-openai-responses"
-  | "anthropic-messages"
-  | "google-generative-ai"
-  | "google-vertex"
-  | "mistral-conversations"
-  | "bedrock-converse-stream";
+Binary: `pi-ai` → `dist/cli.js` (interactive REPL + provider login + listing).
 
-type Api = KnownApi | (string & {});
-```
+### 2.2 Top-level functions
 
-The `(string & {})` union allows custom API identifiers while preserving IDE auto-complete for known values.
+From `packages/ai/src/index.ts:1-43`:
 
-Current `main` after v0.74.0 also contains an unreleased separate image API surface with `openrouter-images`; image APIs are not part of the v0.74.0 released chat protocol set.
+```ts
+// Streaming
+import { stream, complete, streamSimple, completeSimple } from "@earendil-works/pi-ai";
 
-### Model
-
-A `Model<TApi>` carries all metadata needed to make a request:
-
-```typescript
-interface Model<TApi extends Api> {
-  id: string;                    // e.g. "claude-sonnet-4-20250514"
-  name: string;                  // human-readable name
-  api: TApi;                     // wire protocol
-  provider: Provider;            // e.g. "anthropic"
-  baseUrl: string;               // API endpoint
-  reasoning: boolean;            // supports thinking/reasoning
-  input: ("text" | "image")[];   // input modalities
-  cost: {
-    input: number;               // $/million tokens
-    output: number;
-    cacheRead: number;
-    cacheWrite: number;
-  };
-  contextWindow: number;         // max input tokens
-  maxTokens: number;             // max output tokens
-  headers?: Record<string, string>;
-  compat?: OpenAICompletionsCompat | OpenAIResponsesCompat;
-}
-```
-
-The `compat` field is typed conditionally: it is `OpenAICompletionsCompat` for `openai-completions` models, `OpenAIResponsesCompat` for `openai-responses` models, and `never` for other APIs.
-
-### Context
-
-```typescript
-interface Context {
-  systemPrompt?: string;
-  messages: Message[];
-  tools?: Tool[];
-}
-```
-
-`Context` is plain JSON-serializable data. It can be `JSON.stringify`'d, persisted, and `JSON.parse`'d to resume a conversation, including with a different model.
-
-### Message
-
-Three message roles exist:
-
-| Type | `role` | Key Fields |
-|------|--------|------------|
-| `UserMessage` | `"user"` | `content: string \| (TextContent \| ImageContent)[]`, `timestamp` |
-| `AssistantMessage` | `"assistant"` | `content: (TextContent \| ThinkingContent \| ToolCall)[]`, `api`, `provider`, `model`, `usage`, `stopReason`, `responseId?`, `errorMessage?`, `timestamp` |
-| `ToolResultMessage` | `"toolResult"` | `toolCallId`, `toolName`, `content: (TextContent \| ImageContent)[]`, `isError`, `details?`, `timestamp` |
-
-Content block types:
-
-- **TextContent** -- `{ type: "text", text: string, textSignature?: string }`
-- **ThinkingContent** -- `{ type: "thinking", thinking: string, thinkingSignature?: string, redacted?: boolean }`
-- **ImageContent** -- `{ type: "image", data: string, mimeType: string }` (base64-encoded)
-- **ToolCall** -- `{ type: "toolCall", id: string, name: string, arguments: Record<string, any>, thoughtSignature?: string }`
-
-### Tool
-
-```typescript
-interface Tool<TParameters extends TSchema = TSchema> {
-  name: string;
-  description: string;
-  parameters: TParameters;
-}
-```
-
-Parameters are TypeBox schemas (which are also valid JSON Schema objects).
-
-### StreamOptions
-
-Base options shared by all providers:
-
-```typescript
-interface StreamOptions {
-  temperature?: number;
-  maxTokens?: number;
-  signal?: AbortSignal;
-  apiKey?: string;
-  transport?: "sse" | "websocket" | "auto";
-  cacheRetention?: "none" | "short" | "long";
-  sessionId?: string;
-  onPayload?: (payload: unknown, model: Model<Api>) => unknown | undefined | Promise<unknown | undefined>;
-  onResponse?: (response: Response) => void;
-  headers?: Record<string, string>;
-  timeoutMs?: number;
-  maxRetries?: number;
-  metadata?: Record<string, unknown>;
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `transport` | `"sse"`, `"websocket"`, `"websocket-cached"`, or `"auto"`. Providers that do not support a transport ignore it. |
-| `onResponse` | Called after each HTTP response, before the stream is consumed. Current signature is `(response: ProviderResponse, model: Model<Api>)`. |
-| `timeoutMs` / `maxRetries` | Passed to provider SDKs that support request timeouts and retries. |
-
-### SimpleStreamOptions
-
-Extends `StreamOptions` with the provider-agnostic reasoning knob:
-
-```typescript
-interface SimpleStreamOptions extends StreamOptions {
-  reasoning?: ThinkingLevel;
-  thinkingBudgets?: ThinkingBudgets;
-}
-```
-
-### StopReason
-
-```typescript
-type StopReason = "stop" | "length" | "toolUse" | "error" | "aborted";
-```
-
-### Usage
-
-```typescript
-interface Usage {
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
-  totalTokens: number;
-  cost: {
-    input: number;
-    output: number;
-    cacheRead: number;
-    cacheWrite: number;
-    total: number;
-  };
-}
-```
-
----
-
-## Provider Architecture
-
-### API Identifiers and Dispatch
-
-The library uses a registry pattern (`src/api-registry.ts`) to map API identifiers to provider implementations. Each registered `ApiProvider` supplies two streaming functions:
-
-```typescript
-interface ApiProvider<TApi extends Api, TOptions extends StreamOptions> {
-  api: TApi;
-  stream: StreamFunction<TApi, TOptions>;
-  streamSimple: StreamFunction<TApi, SimpleStreamOptions>;
-}
-```
-
-When `stream(model, context, options)` is called in `src/stream.ts`, the flow is:
-
-1. Look up the provider via `getApiProvider(model.api)`.
-2. Invoke `provider.stream(model, context, options)`.
-3. Return the resulting `AssistantMessageEventStream`.
-
-The `complete()` function is a thin wrapper that calls `stream()` and awaits `stream.result()`.
-
-### Lazy Loading
-
-Provider modules are not statically imported. Instead, `src/providers/register-builtins.ts` registers lazy wrappers for each API. On first invocation:
-
-1. A `createLazyStream()` wrapper creates an outer `AssistantMessageEventStream`.
-2. The actual provider module is loaded via `import("./anthropic.js")` (or whichever provider).
-3. The provider's real stream function is called and its events are forwarded to the outer stream.
-4. Subsequent calls reuse the cached module promise.
-
-This design means importing `@earendil-works/pi-ai` does not load any provider SDK. The Anthropic SDK, OpenAI SDK, Google GenAI SDK, etc. are only loaded when a request first targets that API.
-
-### Registration
-
-All ten built-in APIs are registered when `register-builtins.ts` is first imported (which happens at module load via `src/stream.ts`):
-
-```
-anthropic-messages        -> anthropic.ts
-openai-completions        -> openai-completions.ts
-openai-responses          -> openai-responses.ts
-openai-codex-responses    -> openai-codex-responses.ts
-azure-openai-responses    -> azure-openai-responses.ts
-mistral-conversations     -> mistral.ts
-google-generative-ai      -> google.ts
-google-vertex             -> google-vertex.ts
-bedrock-converse-stream   -> amazon-bedrock.ts
-```
-
-External code can register additional APIs via `registerApiProvider()`, unregister them via `unregisterApiProviders(sourceId)`, or reset to defaults with `resetApiProviders()`.
-
----
-
-## All Supported Providers
-
-The model catalog (`models.generated.ts`) defines 26+ providers. Each maps to one of the 10 wire-protocol APIs:
-
-| Provider | API Identifier | Auth |
-|----------|---------------|------|
-| `amazon-bedrock` | `bedrock-converse-stream` | AWS credentials (profile, IAM keys, bearer token, ECS roles, IRSA) |
-| `anthropic` | `anthropic-messages` | `ANTHROPIC_API_KEY` or `ANTHROPIC_OAUTH_TOKEN` or OAuth |
-| `azure-openai-responses` | `azure-openai-responses` | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_BASE_URL` or `AZURE_OPENAI_RESOURCE_NAME` |
-| `cerebras` | `openai-completions` | `CEREBRAS_API_KEY` |
-| `cloudflare-workers-ai` | `openai-completions` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` — OpenAI-compatible streaming (v0.70.6) |
-| `cloudflare-ai-gateway` | `openai-completions` | `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_GATEWAY_ID` — Cloudflare AI Gateway; routes OpenAI, Anthropic, Workers AI (v0.71.0) |
-| `deepseek` | `openai-completions` | `DEEPSEEK_API_KEY` — V4 Flash, V4 Pro; `xhigh` maps to DeepSeek `max` reasoning effort (v0.70.1) |
-| `fireworks` | `anthropic-messages` | `FIREWORKS_API_KEY` — Anthropic-compatible Messages API (added v0.68.1) |
-| `github-copilot` | `anthropic-messages` / `openai-responses` | OAuth (`COPILOT_GITHUB_TOKEN` / `GH_TOKEN` / `GITHUB_TOKEN`) |
-| `google` | `google-generative-ai` | `GEMINI_API_KEY` |
-| `google-vertex` | `google-vertex` | `GOOGLE_CLOUD_API_KEY` or ADC |
-| `groq` | `openai-completions` | `GROQ_API_KEY` |
-| `huggingface` | `openai-completions` | `HF_TOKEN` |
-| `kimi-coding` | `anthropic-messages` | `KIMI_API_KEY` |
-| `minimax` | `openai-completions` | `MINIMAX_API_KEY` — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (older direct IDs removed in v0.63.0) |
-| `minimax-cn` | `openai-completions` | `MINIMAX_CN_API_KEY` — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (older direct IDs removed in v0.63.0) |
-| `mistral` | `mistral-conversations` | `MISTRAL_API_KEY` |
-| `moonshotai` | `openai-completions` | `MOONSHOT_API_KEY` — Moonshot AI; OpenAI-compatible (v0.71.0) |
-| `moonshotai-cn` | `openai-completions` | `MOONSHOT_API_KEY` — Moonshot AI China endpoint |
-| `openai` | `openai-responses` | `OPENAI_API_KEY` |
-| `openai-codex` | `openai-codex-responses` | OAuth |
-| `opencode` | `openai-completions` | `OPENCODE_API_KEY` |
-| `opencode-go` | `openai-completions` | `OPENCODE_API_KEY` |
-| `openrouter` | `openai-completions` | `OPENROUTER_API_KEY` |
-| `vercel-ai-gateway` | `openai-completions` | `AI_GATEWAY_API_KEY` |
-| `xai` | `openai-completions` | `XAI_API_KEY` |
-| `xiaomi` | `anthropic-messages` | `XIAOMI_API_KEY` — Xiaomi MiMo; Anthropic-compatible; default model `mimo-v2.5-pro`; billing at platform.xiaomimimo.com (v0.72.0) |
-| `zai` | `openai-completions` | `ZAI_API_KEY` |
-
-Additionally, any OpenAI-compatible API (Ollama, vLLM, LM Studio, SGLang) can be used by constructing a custom `Model<"openai-completions">` object.
-
-### Provider Changelog Notes
-
-- **v0.70.0:** Added `findEnvKeys()` function — identifies configured provider API-key environment variables without exposing credential values (see [Environment Variable Detection](#environment-variable-detection)).
-- **v0.70.1:** Added `deepseek` provider — built-in OpenAI-compatible provider with V4 Flash and V4 Pro models. `xhigh` thinking level maps to DeepSeek `max` reasoning effort.
-- **v0.70.6:** Added `cloudflare-workers-ai` provider — built-in OpenAI-compatible streaming provider.
-- **v0.71.0 (breaking):** Removed `google-gemini-cli` and `google-antigravity` providers from the codebase entirely.
-- **v0.71.0:** Added `cloudflare-ai-gateway` provider (Cloudflare AI Gateway) — routes requests to OpenAI, Anthropic, and Workers AI through the Cloudflare gateway.
-- **v0.71.0:** Added `moonshotai` provider — Moonshot AI, OpenAI-compatible with default model resolution and `/login` display.
-- **v0.71.0:** Added `mistral-medium-3-5` model to the `mistral` provider.
-- **v0.71.0:** `AssistantMessage.responseModel` added to the `openai-completions` path — surfaces the concrete `chunk.model` when it differs from the requested ID (e.g., OpenRouter `auto` → resolved model).
-- **v0.72.0 (breaking):** `reasoningEffortMap` in `OpenAICompletionsCompat.compat` replaced by top-level `Model.thinkingLevelMap`. See [thinkingLevelMap Migration](#thinkinglevelmap-migration-v0720).
-- **v0.72.0 (breaking):** `supportsXhigh()` removed. Use `getSupportedThinkingLevels(model)` or `clampThinkingLevel(model, level)` instead.
-- **v0.72.0:** Added `xiaomi` provider — Xiaomi MiMo, Anthropic-compatible, default model `mimo-v2.5-pro`, API billing endpoint at platform.xiaomimimo.com. (Breaking: switched from Token Plan AMS to API billing endpoint.)
-- **v0.61.0:** Added `gpt-5.4-mini` model for the `openai-codex` provider.
-- **v0.62.0:** Added `BedrockOptions.requestMetadata` for AWS cost allocation tagging.
-- **v0.63.0 (breaking):** Removed deprecated `minimax` and `minimax-cn` direct model IDs. Use `MiniMax-M2.7` or `MiniMax-M2.7-highspeed`.
-- **v0.63.1:** Added `gemini-3.1-pro-preview-customtools` model for the `google-vertex` provider.
-- **v0.65.0:** Added tool streaming support for newer Z.ai models.
-- **v0.65.0:** Fixed Anthropic HTTP 413 `request_too_large` errors to be detected as context overflow, allowing callers to trigger compaction and retry.
-- **v0.66.0:** Fixed bare `readline` import to use `node:readline` prefix for Deno compatibility (#2885).
-- **v0.67.0:** `OpenRouterRouting` now supports the full field set: fallbacks, ZDR (zero data retention), quantizations, provider sorting, max price, and preferred throughput/latency constraints.
-- **v0.67.4:** Added `claude-opus-4-7` model for Anthropic and OpenRouter providers.
-- **v0.67.4:** Kimi Coding model generation normalizes deprecated `k2p5` to `kimi-for-coding` from models.dev data.
-- **v0.67.6:** Added `onResponse` callback to `StreamOptions`; added `thinkingDisplay` option to `AnthropicOptions` and `BedrockOptions`.
-- **v0.67.67:** Added Bedrock Converse bearer-token authentication via `AWS_BEARER_TOKEN_BEDROCK`.
-- **v0.68.1:** Added `fireworks` provider via Fireworks' Anthropic-compatible Messages API.
-- **v0.69.0 (breaking):** Migrated from `@sinclair/typebox` 0.34.x + AJV to `typebox` 1.x with TypeBox's built-in validator. Tool argument validation now works in eval-restricted runtimes (Cloudflare Workers).
-- **v0.69.0:** Added `gemini-3.1-flash-lite-preview` to `google-gemini-cli` (Cloud Code Assist) built-in model discovery.
-
----
-
-## Streaming Entry Points
-
-Defined in `src/stream.ts`, four functions form the public API:
-
-### Provider-Native Pair
-
-```typescript
-function stream<TApi extends Api>(
-  model: Model<TApi>,
-  context: Context,
-  options?: ProviderStreamOptions,
-): AssistantMessageEventStream;
-
-async function complete<TApi extends Api>(
-  model: Model<TApi>,
-  context: Context,
-  options?: ProviderStreamOptions,
-): Promise<AssistantMessage>;
-```
-
-`ProviderStreamOptions` is `StreamOptions & Record<string, unknown>`, allowing provider-specific fields (e.g., `thinkingEnabled` for Anthropic, `reasoningEffort` for OpenAI).
-
-### Provider-Agnostic Pair
-
-```typescript
-function streamSimple<TApi extends Api>(
-  model: Model<TApi>,
-  context: Context,
-  options?: SimpleStreamOptions,
-): AssistantMessageEventStream;
-
-async function completeSimple<TApi extends Api>(
-  model: Model<TApi>,
-  context: Context,
-  options?: SimpleStreamOptions,
-): Promise<AssistantMessage>;
-```
-
-These accept `SimpleStreamOptions` with a single `reasoning` field of type `ThinkingLevel`. Each provider's `streamSimple` implementation maps this to the appropriate provider-specific parameters.
-
-### When to Use Which
-
-- Use `streamSimple`/`completeSimple` when you want portable code that works across all providers without caring about provider-specific reasoning parameters.
-- Use `stream`/`complete` when you need fine-grained control over provider-specific options like `thinkingBudgetTokens` (Anthropic), `reasoningSummary` (OpenAI), or `thinking.budgetTokens` (Google).
-
----
-
-## Event Stream Format
-
-### AssistantMessageEventStream
-
-`AssistantMessageEventStream` extends `EventStream<AssistantMessageEvent, AssistantMessage>`. It is an `AsyncIterable` that emits events during streaming and resolves a final `AssistantMessage` via `stream.result()`.
-
-The `EventStream` class (`src/utils/event-stream.ts`) uses a push-based queue with async iteration support. Events are either delivered immediately to a waiting consumer or buffered. The stream terminates on a `done` or `error` event.
-
-### Event Types
-
-```typescript
-type AssistantMessageEvent =
-  | { type: "start"; partial: AssistantMessage }
-  | { type: "text_start"; contentIndex: number; partial: AssistantMessage }
-  | { type: "text_delta"; contentIndex: number; delta: string; partial: AssistantMessage }
-  | { type: "text_end"; contentIndex: number; content: string; partial: AssistantMessage }
-  | { type: "thinking_start"; contentIndex: number; partial: AssistantMessage }
-  | { type: "thinking_delta"; contentIndex: number; delta: string; partial: AssistantMessage }
-  | { type: "thinking_end"; contentIndex: number; content: string; partial: AssistantMessage }
-  | { type: "toolcall_start"; contentIndex: number; partial: AssistantMessage }
-  | { type: "toolcall_delta"; contentIndex: number; delta: string; partial: AssistantMessage }
-  | { type: "toolcall_end"; contentIndex: number; toolCall: ToolCall; partial: AssistantMessage }
-  | { type: "done"; reason: "stop" | "length" | "toolUse"; message: AssistantMessage }
-  | { type: "error"; reason: "aborted" | "error"; error: AssistantMessage };
-```
-
-Every event carries a `partial` field with the in-progress `AssistantMessage`. The `contentIndex` identifies which block in `partial.content[]` is being updated.
-
-The `done` event carries the final `AssistantMessage` with complete usage data. The `error` event carries an `AssistantMessage` with `stopReason` set to `"error"` or `"aborted"` and an `errorMessage` field.
-
-### Tool Call Streaming
-
-During `toolcall_delta` events, tool arguments are progressively parsed using the `partial-json` library. The `arguments` field on the in-progress `ToolCall` block always contains at least `{}`, never `undefined`. Fields may be missing, strings may be truncated, and arrays may be incomplete.
-
-The Google provider does not support function call streaming. It emits a single `toolcall_delta` with the full arguments.
-
----
-
-## ThinkingLevel Abstraction
-
-```typescript
-type ThinkingLevel = "minimal" | "low" | "medium" | "high" | "xhigh";
-```
-
-This is the provider-agnostic reasoning effort scale used by `streamSimple`/`completeSimple`. Each provider maps it differently.
-
-### Provider Mappings
-
-**Anthropic** (adaptive thinking for Opus 4.6 / Sonnet 4.6):
-
-| ThinkingLevel | Anthropic Effort |
-|---------------|-----------------|
-| `minimal` | `"low"` |
-| `low` | `"low"` |
-| `medium` | `"medium"` |
-| `high` | `"high"` |
-| `xhigh` | `"max"` (Opus 4.6 only, otherwise `"high"`) |
-
-For older Anthropic models (e.g., Sonnet 4), budget-based thinking is used instead of adaptive effort. Default budgets are: minimal=1024, low=2048, medium=8192, high=16384 tokens. These can be overridden via `thinkingBudgets` in `SimpleStreamOptions`.
-
-**OpenAI** (Responses API):
-
-ThinkingLevel maps directly to `reasoningEffort`. `xhigh` is only supported on GPT-5.2/5.3/5.4 models; otherwise it is clamped to `"high"`.
-
-**Google** (Generative AI):
-
-For Gemini 2.5 models, ThinkingLevel maps to token budgets:
-- Gemini 2.5 Pro: minimal=128, low=2048, medium=8192, high=32768
-- Gemini 2.5 Flash: minimal=128, low=2048, medium=8192, high=24576
-
-For Gemini 3 models, ThinkingLevel maps to Google's native `ThinkingLevel` enum (`MINIMAL`, `LOW`, `MEDIUM`, `HIGH`).
-
-`xhigh` is always clamped to `"high"` on non-OpenAI providers (except Opus 4.6 on Anthropic).
-
-### supportsXhigh() — Removed in v0.72.0
-
-`supportsXhigh()` was removed in v0.72.0. Use the replacement functions instead:
-
-```typescript
-// Before (removed in v0.72.0)
-if (supportsXhigh(model)) { ... }
-
-// After
-import { getSupportedThinkingLevels, clampThinkingLevel } from "@earendil-works/pi-ai";
-
-// Check whether a model supports xhigh
-if (getSupportedThinkingLevels(model).includes("xhigh")) { ... }
-
-// Or clamp a requested level to what the model actually supports
-const effective = clampThinkingLevel(model, "xhigh"); // returns "high" if xhigh unsupported
-```
-
-`getSupportedThinkingLevels(model)` returns the array of `ThinkingLevel` values the model supports. `clampThinkingLevel(model, requestedLevel)` returns the highest supported level that does not exceed the requested one.
-
----
-
-## OAuth Support
-
-OAuth authentication is handled by the `@earendil-works/pi-ai/oauth` entry point (defined in `src/utils/oauth/`). The library does not store credentials -- that is the caller's responsibility.
-
-### Supported OAuth Providers
-
-| Provider ID | Name | Mechanism |
-|-------------|------|-----------|
-| `anthropic` | Anthropic (Claude Pro/Max) | OAuth with bearer token (`sk-ant-oat*`) |
-| `openai-codex` | OpenAI Codex (ChatGPT Plus/Pro) | ChatGPT OAuth |
-| `github-copilot` | GitHub Copilot | Device code flow |
-
-### API Surface
-
-```typescript
-// Login functions (each returns OAuthCredentials)
-loginAnthropic(callbacks)
-loginOpenAICodex(callbacks)
-loginGitHubCopilot(callbacks)
-
-// Token management
-refreshOAuthToken(providerId, credentials)  // -> OAuthCredentials
-getOAuthApiKey(providerId, credentialsMap)   // -> { newCredentials, apiKey } | null
+// Catalog
+import { getModel, getProviders, getModels, calculateCost } from "@earendil-works/pi-ai";
 
 // Registry
-getOAuthProvider(id)       // -> OAuthProviderInterface
-getOAuthProviders()        // -> OAuthProviderInterface[]
-registerOAuthProvider(p)   // register custom provider
+import { registerApiProvider, unregisterApiProviders, getApiProvider } from "@earendil-works/pi-ai";
+
+// OAuth
+import { getOAuthProvider, registerOAuthProvider, getOAuthApiKey } from "@earendil-works/pi-ai";
+
+// Faux (testing)
+import { registerFauxProvider, fauxText, fauxThinking, fauxToolCall } from "@earendil-works/pi-ai";
+
+// Utilities
+import { isContextOverflow } from "@earendil-works/pi-ai";
 ```
 
-`getOAuthApiKey()` automatically refreshes expired tokens before returning the API key.
+### 2.3 Core types
 
-### CLI Login
+All defined in `packages/ai/src/types.ts`:
 
-The package includes a CLI binary (`pi-ai`) for interactive OAuth login:
-
-```bash
-npx @earendil-works/pi-ai login              # interactive provider selection
-npx @earendil-works/pi-ai login anthropic    # login to specific provider
-npx @earendil-works/pi-ai list               # list available providers
-```
-
-Credentials are saved to `auth.json` in the current directory.
-
-### OAuth Token Detection
-
-The Anthropic provider detects OAuth tokens by checking if the API key contains `"sk-ant-oat"`. When an OAuth token is detected, the request includes Claude Code identity headers (`user-agent: claude-cli/2.1.75`, `anthropic-beta: claude-code-20250219,oauth-2025-04-20,...`). Tool names are also converted to Claude Code canonical casing (e.g., `read` becomes `Read`).
+| Type | Location | Purpose |
+|---|---|---|
+| `KnownApi` | `types.ts:6-15` | Union of 9 built-in wire protocols |
+| `KnownProvider` | `types.ts:19-50` | Union of 31 built-in provider IDs |
+| `Model<TApi>` | `types.ts:434-464` | Generic model descriptor; conditional `compat` payload narrows by API |
+| `Message` | `types.ts:140-158` | `UserMessage \| AssistantMessage \| ToolResultMessage` |
+| `AssistantMessage` | `types.ts:220-233` | `content`, `model`, `provider`, `api`, `usage`, `stopReason`, `errorMessage?` |
+| `Usage` | `types.ts:197-210` | `input`, `output`, `cacheRead`, `cacheWrite`, `cost{input,output,cacheRead,cacheWrite,total}` |
+| `StopReason` | `types.ts:212-218` | `"stop" \| "length" \| "toolUse" \| "error" \| "aborted"` |
+| `AssistantMessageEvent` | `types.ts:269-281` | 13 event types streamed during generation |
+| `StreamOptions` | `types.ts:75-136` | Cancellation, telemetry, retries, headers, transport, session caching |
+| `ThinkingLevel` | `types.ts:60-66` | `"minimal" \| "low" \| "medium" \| "high" \| "xhigh"` |
+| `ModelThinkingLevel` | — | Adds `"off"` for models that can toggle reasoning |
+| `OpenAICompletionsCompat` | `types.ts:287-322` | Per-model compatibility flags (max-tokens field, thinking format, cache control format) |
+| `OpenRouterRouting` | `types.ts:352-419` | OpenRouter routing/preset/transforms/provider preferences |
+| `VercelGatewayRouting` | `types.ts:426-431` | Vercel AI Gateway routing |
 
 ---
 
-## Model Catalog
+## 3. Streaming Contract
 
-### Generation
+### 3.1 Entry points
 
-Models are defined in `src/models.generated.ts`, a file auto-generated by `scripts/generate-models.ts`. The build script (`npm run build`) runs the generation step first:
+`packages/ai/src/stream.ts:1-59` imports `./providers/register-builtins.js` for side-effect registration, then dispatches via `getApiProvider(model.api)`:
 
-```json
-"build": "npm run generate-models && tsgo -p tsconfig.build.json"
+```ts
+function stream(args: StreamArgs): AssistantMessageEventStream;
+function complete(args: StreamArgs): Promise<AssistantMessage>;
+function streamSimple(args: SimpleStreamArgs): AssistantMessageEventStream;
+function completeSimple(args: SimpleStreamArgs): Promise<AssistantMessage>;
 ```
 
-The generation script fetches model metadata from external sources (e.g., models.dev API) and produces a typed constant `MODELS` that maps providers to their model entries.
+`StreamArgs` (canonical form):
 
-### Structure
-
-The `MODELS` object is keyed by provider name, then by model ID. Each entry is a `Model<T>` satisfying the appropriate API type. Example entry:
-
-```typescript
-"anthropic": {
-  "claude-sonnet-4-20250514": {
-    id: "claude-sonnet-4-20250514",
-    name: "Claude Sonnet 4",
-    api: "anthropic-messages",
-    provider: "anthropic",
-    baseUrl: "https://api.anthropic.com",
-    reasoning: true,
-    input: ["text", "image"],
-    cost: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
-    contextWindow: 200000,
-    maxTokens: 8192,
-  } satisfies Model<"anthropic-messages">,
-  // ...
-}
-```
-
-### Registry at Runtime
-
-`src/models.ts` initializes a `Map<string, Map<string, Model<Api>>>` from `MODELS` at module load. Three query functions are exported:
-
-```typescript
-getProviders(): KnownProvider[]
-getModels(provider): Model[]
-getModel(provider, modelId): Model
-```
-
-Both `provider` and `modelId` parameters are typed as string literal unions, providing IDE auto-complete for all known provider/model combinations.
-
-### Model Metadata
-
-Each model carries:
-
-- **id** -- the identifier sent to the provider API
-- **name** -- human-readable display name
-- **api** -- which wire protocol to use
-- **provider** -- which provider this model belongs to
-- **baseUrl** -- the API endpoint URL
-- **reasoning** -- whether the model supports thinking/reasoning
-- **input** -- supported input modalities (`"text"` and/or `"image"`)
-- **cost** -- pricing per million tokens for input, output, cache read, and cache write
-- **contextWindow** -- maximum input context in tokens
-- **maxTokens** -- maximum output tokens
-
----
-
-## Cost Tracking
-
-### calculateCost()
-
-Defined in `src/models.ts`:
-
-```typescript
-function calculateCost<TApi extends Api>(model: Model<TApi>, usage: Usage): Usage["cost"]
-```
-
-This computes dollar costs from token counts using the model's pricing metadata. The formula for each component is:
-
-```
-cost = (model.cost.{component} / 1_000_000) * usage.{component}
-```
-
-The total is the sum of input, output, cacheRead, and cacheWrite costs.
-
-### When Costs Are Calculated
-
-Every provider implementation calls `calculateCost(model, output.usage)` after parsing usage metadata from the API response. This happens:
-
-- On `message_start` and `message_delta` events (Anthropic)
-- On `response.completed` events (OpenAI Responses)
-- On `usageMetadata` chunks (Google)
-- On stream completion (Bedrock, Mistral, OpenAI Completions)
-
-The `AssistantMessage` returned by `stream.result()` always has `usage.cost` populated.
-
-### Service Tier Pricing (OpenAI)
-
-The OpenAI Responses provider supports `serviceTier` (`"flex"`, `"priority"`, or default). Cost multipliers are applied after base cost calculation:
-
-- `flex`: 0.5x
-- `priority`: 2x
-- default: 1x
-
----
-
-## Tool Validation
-
-### TypeBox 1.x Migration (v0.69.0)
-
-As of v0.69.0, `@earendil-works/pi-ai` migrated from `@sinclair/typebox` 0.34.x + AJV to `typebox` 1.x with TypeBox's built-in validator. Tool argument validation now works in eval-restricted runtimes (Cloudflare Workers) — previously it was silently skipped.
-
-**Migration:** Install and import from `typebox` instead of `@sinclair/typebox`. Retest coercion-sensitive tool paths — they now go through TypeBox-native validation instead of AJV.
-
-### validateToolCall()
-
-Defined in `src/utils/validation.ts`:
-
-```typescript
-function validateToolCall(tools: Tool[], toolCall: ToolCall): any
-function validateToolArguments(tool: Tool, toolCall: ToolCall): any
-```
-
-These validate tool call arguments against the tool's TypeBox schema using TypeBox's built-in validator (v0.69.0+; previously used AJV). Features:
-
-- **Type coercion** -- string `"42"` is coerced to number `42` when the schema expects a number.
-- **Format validation** -- standard formats such as `date-time`, `email`, `uri` are supported.
-- **Structured error messages** -- validation errors include the path, message, and received arguments.
-- **Eval-restricted runtime support** -- validation now works in Cloudflare Workers and other environments that restrict dynamic code evaluation (previously was silently skipped in such environments).
-
-The `agentLoop` in the coding-agent package calls `validateToolCall` automatically. When using `stream`/`complete` directly, callers should call it manually after `toolcall_end` events.
-
-### StringEnum Helper
-
-For Google API compatibility, the library provides a `StringEnum` helper (re-exported from `src/utils/typebox-helpers.ts`) instead of `Type.Enum`, which generates `anyOf`/`const` patterns that Google's API does not support.
-
----
-
-## Provider-Specific Options
-
-Each provider extends `StreamOptions` with its own options interface.
-
-### AnthropicOptions
-
-```typescript
-interface AnthropicOptions extends StreamOptions {
-  thinkingEnabled?: boolean;
-  thinkingBudgetTokens?: number;     // budget-based (older models)
-  effort?: AnthropicEffort;          // adaptive (Opus 4.6, Sonnet 4.6)
-  interleavedThinking?: boolean;     // default: true
-  thinkingDisplay?: "summarized" | "omitted";  // added v0.67.6, default: "summarized"
-  toolChoice?: "auto" | "any" | "none" | { type: "tool"; name: string };
-  client?: Anthropic;                // inject pre-built client
-}
-```
-
-Adaptive thinking (`type: "adaptive"`) is used for Opus 4.6 and Sonnet 4.6 models. Older models use budget-based thinking (`type: "enabled"` with `budget_tokens`).
-
-`thinkingDisplay` (added v0.67.6): Defaults to `"summarized"` so Claude Opus 4.7 and Mythos Preview keep returning thinking text. Set to `"omitted"` to skip thinking streaming for faster time-to-first-text-token.
-
-### OpenAIResponsesOptions
-
-```typescript
-interface OpenAIResponsesOptions extends StreamOptions {
-  reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
-  reasoningSummary?: "auto" | "detailed" | "concise" | null;
-  serviceTier?: "flex" | "priority" | "auto" | "default";
-}
-```
-
-### GoogleOptions
-
-```typescript
-interface GoogleOptions extends StreamOptions {
-  toolChoice?: "auto" | "none" | "any";
-  thinking?: {
-    enabled: boolean;
-    budgetTokens?: number;            // -1 for dynamic, 0 to disable
-    level?: GoogleThinkingLevel;      // "MINIMAL" | "LOW" | "MEDIUM" | "HIGH"
-  };
-}
-```
-
-### BedrockOptions
-
-```typescript
-interface BedrockOptions extends StreamOptions {
-  requestMetadata?: Record<string, string>;
-  thinkingDisplay?: "summarized" | "omitted";  // added v0.67.6, default: "summarized"
-}
-```
-
-#### Bearer-Token Authentication (v0.67.67+)
-
-Set `AWS_BEARER_TOKEN_BEDROCK` to authenticate without local SigV4 credentials. Useful for GovCloud access. When this environment variable is set, the Bedrock provider uses the SDK's native token auth path and omits Claude `thinking.display` for GovCloud targets.
-
-#### requestMetadata (v0.62.0+)
-
-Pass key-value pairs for AWS cost allocation tagging. These forward to the Bedrock Converse API `requestMetadata` field and appear in AWS Cost Explorer split cost allocation data:
-
-```typescript
-const options: BedrockOptions = {
-  requestMetadata: {
-    project: "my-app",
-    team: "backend",
-  },
+```ts
+type StreamArgs = {
+    model: Model;
+    messages: Message[];
+    apiKey: string;
+    systemPrompt?: string;
+    tools?: Tool[];
+    options?: StreamOptions & ProviderSpecificOptions;
 };
 ```
 
-`BedrockOptions` is exported from the package root entry point.
+The `*Simple` variants accept a flat string prompt and return single-turn output.
 
-### OpenAICompletionsCompat
+### 3.2 Event stream
 
-For OpenAI-compatible providers, the `compat` field on `Model` controls behavior differences:
+`packages/ai/src/utils/event-stream.ts:1-88` defines `EventStream<T, R>` with internal `queue`/`waiting`/`done`/`finalResultPromise`. `AssistantMessageEventStream` resolves the final `AssistantMessage` when an event of type `"done"` or `"error"` is pushed.
 
-```typescript
-interface OpenAICompletionsCompat {
-  supportsStore?: boolean;
-  supportsDeveloperRole?: boolean;
-  supportsReasoningEffort?: boolean;
-  supportsUsageInStreaming?: boolean;
-  supportsStrictMode?: boolean;
-  maxTokensField?: "max_completion_tokens" | "max_tokens";
-  requiresToolResultName?: boolean;
-  requiresAssistantAfterToolResult?: boolean;
-  requiresThinkingAsText?: boolean;
-  thinkingFormat?: "openai" | "openrouter" | "zai" | "qwen" | "qwen-chat-template";
-  openRouterRouting?: OpenRouterRouting;
-  vercelGatewayRouting?: VercelGatewayRouting;
+Event types (`types.ts:269-281`):
+
+| Event | When |
+|---|---|
+| `start` | Stream opened |
+| `text_start` / `text_delta` / `text_end` | Plain assistant text |
+| `thinking_start` / `thinking_delta` / `thinking_end` | Reasoning content (when model supports it) |
+| `toolcall_start` / `toolcall_delta` / `toolcall_end` | Tool call streaming |
+| `done` | Stream finished cleanly |
+| `error` | Stream aborted with `errorMessage` |
+
+Consumer pattern:
+
+```ts
+const ev = stream({ model, messages, apiKey });
+for await (const event of ev) {
+    if (event.type === "text_delta") process.stdout.write(event.delta);
 }
+const msg = await ev.finalResult; // AssistantMessage
 ```
 
-If `compat` is not set, the library auto-detects settings from the `baseUrl`. Partial overrides are merged with auto-detected defaults.
+### 3.3 StreamOptions
 
-### thinkingLevelMap Migration (v0.72.0)
+From `types.ts:75-136`:
 
-**Breaking change:** The `reasoningEffortMap` field inside `OpenAICompletionsCompat.compat` was replaced by a top-level `Model.thinkingLevelMap` field.
-
-**Before (removed in v0.72.0):**
-```typescript
-{
-  compat: {
-    reasoningEffortMap: { high: "high", xhigh: "max" }
-  }
-}
-```
-
-**After (v0.72.0+):**
-```typescript
-{
-  thinkingLevelMap: {
-    minimal: null,   // null = level unsupported by this model
-    low: null,
-    medium: null,
-    high: "high",
-    xhigh: "max",
-  }
-}
-```
-
-`null` values indicate an unsupported thinking level. The library uses `thinkingLevelMap` to drive both `getSupportedThinkingLevels()` and `clampThinkingLevel()`. Update any custom model definitions that previously set `compat.reasoningEffortMap`.
+| Field | Purpose |
+|---|---|
+| `signal?: AbortSignal` | Cancellation |
+| `onPayload?(payload)` | Inspect outgoing wire payload |
+| `onResponse?(response)` | Inspect raw HTTP response |
+| `timeoutMs?: number` | Per-request timeout |
+| `maxRetries?: number` | Provider retry budget |
+| `maxRetryDelayMs?: number` | Exponential backoff cap |
+| `metadata?: Record<string,string>` | Forwarded to provider (Bedrock requestMetadata, Anthropic metadata) |
+| `headers?: Record<string,string>` | Additional HTTP headers |
+| `sessionId?: string` | Reuse WebSocket session (Codex) |
+| `transport?: "sse" \| "websocket" \| "websocket-cached" \| "auto"` | Wire selection (Codex) |
+| `cacheRetention?: "none" \| "short" \| "long"` | Anthropic ephemeral cache TTL |
 
 ---
 
-## Cross-Provider Handoffs
+## 4. Provider Catalog
 
-The `transformMessages()` function in `src/providers/transform-messages.ts` enables seamless conversation hand-offs between providers.
+Built-in providers (`KnownProvider`, `types.ts:19-50`) grouped by API family. All sourced from `packages/ai/src/models.generated.ts` — line offsets below mark the section in that file.
 
-When messages from one provider are sent to a different provider:
+### 4.1 Anthropic Messages API (`anthropic-messages`)
 
-1. **User and tool result messages** pass through unchanged.
-2. **Assistant messages from the same provider/API/model** are preserved as-is, including thinking signatures.
-3. **Assistant messages from different providers** have their:
-   - Thinking blocks with signatures stripped and converted to plain text blocks (without `<thinking>` tags to avoid the model mimicking them)
-   - Redacted thinking blocks dropped entirely (opaque encrypted content is model-specific)
-   - `thoughtSignature` on tool calls removed
-   - Tool call IDs normalized via a provider-specific function (e.g., Anthropic requires `^[a-zA-Z0-9_-]+$`, max 64 chars)
-4. **Errored/aborted assistant messages** are skipped entirely to avoid replaying incomplete turns.
-5. **Orphaned tool calls** (tool calls without matching tool results) get synthetic error results inserted.
+| Provider | `models.generated.ts` offset | Notes |
+|---|---|---|
+| `anthropic` | 1599 | Direct Anthropic SDK; supports `client` override (e.g. `AnthropicVertex`) |
 
----
+Options (`packages/ai/src/providers/anthropic.ts:174-217`):
 
-## Prompt Caching
+- `thinkingEnabled?: boolean`
+- `thinkingBudgetTokens?: number`
+- `effort?: "low" \| "medium" \| "high" \| "xhigh" \| "max"`
+- `thinkingDisplay?: "summarized" \| "omitted"` (default `"summarized"`)
+- `interleavedThinking?: boolean` — sets `anthropic-beta: interleaved-thinking-2025-05-14`
+- `toolChoice?: ...`
+- `client?: AnthropicSDK` — pre-built SDK instance for proxying or Vertex routing
 
-### CacheRetention
+OAuth (Claude Code): the provider attaches `anthropic-beta: oauth-2025-04-20, fine-grained-tool-streaming-2025-05-14, interleaved-thinking-2025-05-14` and rewrites the system prompt when `apiKey` comes from `getOAuthApiKey("anthropic")`.
 
-```typescript
-type CacheRetention = "none" | "short" | "long";
-```
+### 4.2 OpenAI Chat Completions (`openai-completions`)
 
-Set via `cacheRetention` in `StreamOptions` or the `PI_CACHE_RETENTION` environment variable.
+| Provider | offset | Compat notes |
+|---|---|---|
+| `cerebras` | 2734 | `isNonStandard: true`, `supportsStore: false`, `supportsDeveloperRole: false` |
+| `cloudflare-ai-gateway` | 2804 | `maxTokensField: "max_tokens"` |
+| `cloudflare-workers-ai` | 3414 | `isNonStandard: true` |
+| `deepseek` | 3560 | `thinkingFormat: "deepseek"` |
+| `fireworks` | 3600 | Standard compat |
+| `github-copilot` | 3925 | OAuth (device flow), per-request `X-GitHub-Token` header |
+| `groq` | 5114 | Standard |
+| `huggingface` | 5423 | Standard |
+| `kimi-coding` | 5821 | Moonshot AI router; `thinkingFormat: "qwen"` for K2 P-series |
+| `minimax` | 5859 | Standard |
+| `minimax-cn` | 5895 | CN endpoint |
+| `moonshotai` | 6409 | `maxTokensField: "max_tokens"` |
+| `moonshotai-cn` | 6537 | CN endpoint |
+| `opencode` | 7585 | `isNonStandard: true` |
+| `opencode-go` | 8253 | Go runtime backend |
+| `openrouter` | 8465 | `OpenRouterRouting` payload via `compat.openrouter` (`types.ts:352-419`) |
+| `vercel-ai-gateway` | 13161 | `VercelGatewayRouting` |
+| `xai` | 15931 | `isNonStandard: true` for grok-4 |
+| `xiaomi` | 16358 | Direct `api.xiaomimimo.com` endpoint (v0.73.0 BREAKING change) |
+| `xiaomi-token-plan-ams` | 16445 | AMS region |
+| `xiaomi-token-plan-cn` | 16532 | CN region |
+| `xiaomi-token-plan-sgp` | 16619 | SGP region |
+| `zai` | 16706 | `thinkingFormat: "zai"`; silent context overflow handled in `utils/overflow.ts` |
 
-| Provider | `"short"` (default) | `"long"` |
-|----------|-------------------|----------|
-| Anthropic | 5 minutes (`ephemeral`) | 1 hour (`ephemeral` + `ttl: "1h"`, direct API only) |
-| OpenAI Responses | in-memory | 24 hours (`prompt_cache_retention: "24h"`, direct API only) |
+`detectCompat` in `packages/ai/src/providers/openai-completions.ts:1048-1102` infers compat from `model.provider` and `baseUrl`:
 
-The `sessionId` field in `StreamOptions` enables session-based caching for providers that support it (OpenAI Codex uses it for `prompt_cache_key`).
+- `thinkingFormat`: `"deepseek"` for DeepSeek, `"zai"` for Z.ai, `"openrouter"` for OpenRouter, `"qwen"` / `"qwen-chat-template"` for Qwen variants, `"openai"` otherwise.
+- `cacheControlFormat: "anthropic"` only when `provider === "openrouter"` AND `model.id.startsWith("anthropic/")`.
+- `maxTokensField`: `"max_tokens"` for Chutes / Moonshot / Cloudflare AI Gateway; `"max_completion_tokens"` elsewhere.
 
----
+Options (`packages/ai/src/providers/openai-completions.ts:77-80`):
+- `toolChoice?: "auto" \| "none" \| "required" \| { name: string }`
+- `reasoningEffort?: "minimal" \| "low" \| "medium" \| "high" \| "xhigh"`
 
-## Adding a New Provider
+### 4.3 OpenAI Responses (`openai-responses`)
 
-Based on the project's AGENTS.md and the existing codebase, adding a provider requires changes across 8 areas:
+| Provider | offset |
+|---|---|
+| `openai` | 6665 |
 
-### 1. Core Types (`src/types.ts`)
+Options (`packages/ai/src/providers/openai-responses.ts:55-59`):
+- `reasoningEffort?: "minimal" \| "low" \| "medium" \| "high" \| "xhigh"`
+- `reasoningSummary?: "auto" \| "detailed" \| "concise" \| null`
+- `serviceTier?: "auto" \| "default" \| "flex" \| "priority" \| "scale"`
 
-- Add the API identifier to `KnownApi` (e.g., `"my-new-api"`)
-- Create an options interface extending `StreamOptions` (e.g., `MyNewApiOptions`)
-- Add the provider name to `KnownProvider` (e.g., `"my-provider"`)
+### 4.4 Azure OpenAI Responses (`azure-openai-responses`)
 
-### 2. Provider Implementation (`src/providers/`)
+| Provider | offset |
+|---|---|
+| `azure-openai-responses` | 1994 |
 
-Create a new file (e.g., `my-provider.ts`) that exports:
+Options (`packages/ai/src/providers/azure-openai-responses.ts:44-51`) extend Responses options with:
+- `azureApiVersion?: string` (default `"v1"`)
+- `azureResourceName?: string`
+- `azureBaseUrl?: string`
+- `azureDeploymentName?: string`
 
-- `streamMyProvider()` -- a `StreamFunction` returning `AssistantMessageEventStream`
-- `streamSimpleMyProvider()` -- maps `SimpleStreamOptions` to provider-specific options
-- Message conversion functions
-- Tool conversion functions
-- Response parsing to emit standardized events
+`AZURE_OPENAI_DEPLOYMENT_NAME_MAP` env var is parsed as comma-separated `model-id=deployment-name` pairs to override per-model deployment routing.
 
-### 3. API Registry (`src/providers/register-builtins.ts`)
+### 4.5 OpenAI Codex Responses (`openai-codex-responses`)
 
-- Add lazy loader wrappers (never statically import provider modules here)
-- Register via `registerApiProvider({ api: "my-new-api", stream: ..., streamSimple: ... })`
+| Provider | offset |
+|---|---|
+| `openai-codex` | 7405 |
 
-### 4. Package Exports (`package.json`)
+`DEFAULT_CODEX_BASE_URL = "https://chatgpt.com/backend-api"` (`packages/ai/src/providers/openai-codex-responses.ts:50`).
 
-Add a subpath export:
+Options (`openai-codex-responses.ts:70-75`):
+- `reasoningEffort?: "none" \| "minimal" \| "low" \| "medium" \| "high" \| "xhigh"`
+- `reasoningSummary?: "auto" \| "concise" \| "detailed" \| "off" \| "on" \| null`
+- `serviceTier?` (same as OpenAI Responses)
+- `textVerbosity?: "low" \| "medium" \| "high"`
 
-```json
-"./my-provider": {
-  "types": "./dist/providers/my-provider.d.ts",
-  "import": "./dist/providers/my-provider.js"
-}
-```
+Transport selection (line 184): when `options.transport === "websocket"` or `"websocket-cached"`, the provider establishes a WebSocket session keyed by `sessionId`. Cached sessions expire after 5 minutes of inactivity. Debug helpers exported:
 
-### 5. Public Re-exports (`src/index.ts`)
-
-Add `export type { MyNewApiOptions } from "./providers/my-provider.js";`
-
-### 6. Credential Detection (`src/env-api-keys.ts`)
-
-Add the provider's environment variable to the `envMap` or add custom logic for complex auth.
-
-### 7. Model Generation (`scripts/generate-models.ts`)
-
-Add logic to fetch models from the provider's source and map to the `Model` interface.
-
-### 8. Tests (`test/`)
-
-Add the provider to:
-- `stream.test.ts` -- basic streaming and tool use
-- `tokens.test.ts` -- token usage reporting
-- `abort.test.ts` -- request cancellation
-- `cross-provider-handoff.test.ts` -- at least one model pair
-- Other test files as applicable
-
-### 9. Documentation
-
-- Update `packages/ai/README.md` supported providers list and environment variables table
-- Add entry to `packages/ai/CHANGELOG.md`
-- Update `../coding-agent/src/core/model-resolver.ts` with default model
-- Update `../coding-agent/src/cli/args.ts` help text
-
----
-
-## Environment Variable Detection
-
-`src/env-api-keys.ts` provides `getEnvApiKey(provider)` for resolving API keys from environment variables in Node.js. The function:
-
-- Returns `undefined` in browser environments (dynamic import guards prevent loading `node:fs`, `node:os`, `node:path`)
-- Handles special cases:
-  - **GitHub Copilot**: checks `COPILOT_GITHUB_TOKEN`, then `GH_TOKEN`, then `GITHUB_TOKEN`
-  - **Anthropic**: `ANTHROPIC_OAUTH_TOKEN` takes precedence over `ANTHROPIC_API_KEY`
-  - **Google Vertex**: checks `GOOGLE_CLOUD_API_KEY`, then falls back to ADC file detection + project/location env vars
-  - **Amazon Bedrock**: checks 6 different AWS credential sources (profile, IAM keys, bearer token, ECS roles, IRSA)
-- All other providers use a simple key-value map (e.g., `openai` -> `OPENAI_API_KEY`)
-
-### findEnvKeys() (v0.70.0+)
-
-`findEnvKeys()` identifies which provider API-key environment variables are currently set in the process environment, without exposing the credential values themselves:
-
-```typescript
-function findEnvKeys(): string[]
-```
-
-Returns an array of environment variable names (e.g., `["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]`) that are both registered as provider auth keys and present in `process.env`. Useful for displaying which providers are configured to the user without leaking secrets.
-
----
-
-## ModelRegistry Breaking Changes
-
-`ModelRegistry` is defined in `@earendil-works/pi-agent-core` (the coding-agent package), not in `@earendil-works/pi-ai` itself. Consumers who use `ModelRegistry` for API key resolution should note these changes.
-
-**v0.63.0:** `ModelRegistry.getApiKey(model)` was removed. Use `getApiKeyAndHeaders(model)` instead, which returns `{ apiKey, headers }`:
-
-```typescript
-// Before (removed in v0.63.0)
-const apiKey = await ctx.modelRegistry.getApiKey(model);
-
-// After
-const { apiKey, headers } = await ctx.modelRegistry.getApiKeyAndHeaders(model);
-```
-
-**v0.64.0:** `ModelRegistry` no longer has a public constructor. Use factory methods:
-
-```typescript
-// File-backed registry (reads ~/.pi/models.json)
-const registry = ModelRegistry.create(authStorage);
-const registry = ModelRegistry.create(authStorage, customModelsJsonPath);
-
-// In-memory/test registry (built-in models only, no file I/O)
-const registry = ModelRegistry.inMemory(authStorage);
-
-// Direct `new ModelRegistry(...)` no longer compiles.
-```
-
----
-
-## Faux Provider
-
-### Faux Provider (v0.64.0+)
-
-For deterministic tests and scripted demos, register a faux provider that returns scripted responses:
-
-```typescript
+```ts
 import {
-  registerFauxProvider,
-  fauxAssistantMessage,
-  fauxText,
-  fauxThinking,
-  fauxToolCall,
-} from "@earendil-works/pi-ai";
-
-registerFauxProvider();
-// Use provider: "faux" when constructing a model
+    getOpenAICodexWebSocketDebugStats,
+    resetOpenAICodexWebSocketDebugStats,
+    closeOpenAICodexWebSocketSessions,
+} from "@earendil-works/pi-ai/openai-codex-responses";
 ```
 
-All faux helpers are exported from the package root via `export * from "./providers/faux.js"`. Use `fauxText`, `fauxThinking`, and `fauxToolCall` to build scripted `AssistantMessage` content, and `fauxAssistantMessage` to assemble full messages.
+### 4.6 Google Generative AI (`google-generative-ai`)
+
+| Provider | offset |
+|---|---|
+| `google` | 4419 |
+
+Options (`packages/ai/src/providers/google.ts:36-43`):
+- `toolChoice?: "auto" \| "none" \| "any"`
+- `thinking?: { enabled: boolean; budgetTokens?: number; level?: GoogleThinkingLevel }`
+  - `budgetTokens = -1` → dynamic, `0` → disabled.
+
+### 4.7 Google Vertex (`google-vertex`)
+
+| Provider | offset |
+|---|---|
+| `google-vertex` | 4887 |
+
+Options (`packages/ai/src/providers/google-vertex.ts:38-47`) extend `GoogleOptions` with `project` and `location`. Authenticates with API key OR Application Default Credentials (ADC): detected via `GOOGLE_APPLICATION_CREDENTIALS` or `~/.config/gcloud/application_default_credentials.json` (`env-api-keys.ts:63-89`).
+
+### 4.8 Mistral Conversations (`mistral-conversations`)
+
+| Provider | offset |
+|---|---|
+| `mistral` | 5931 |
+
+Options (`packages/ai/src/providers/mistral.ts:40-44`):
+- `toolChoice?: "auto" \| "none" \| "any"`
+- `promptMode?: "reasoning"`
+- `reasoningEffort?: "none" \| "high"`
+
+Each request constructs a fresh `MistralClient`; no shared mutable state.
+
+### 4.9 Amazon Bedrock Converse Stream (`bedrock-converse-stream`)
+
+| Provider | offset |
+|---|---|
+| `amazon-bedrock` | 7 |
+
+Options (`packages/ai/src/providers/amazon-bedrock.ts:49-83`):
+- `region?: string`
+- `profile?: string`
+- `toolChoice?`
+- `reasoning?: boolean`
+- `thinkingBudgets?: number`
+- `interleavedThinking?: boolean` — Claude 4.x only
+- `thinkingDisplay?: "summarized" \| "omitted"`
+- `requestMetadata?: Record<string,string>` — ≤50 pairs, keys ≤64 chars (no `aws:` prefix), values ≤256 chars
+- `bearerToken?: string` — when set, sends `Authorization: Bearer <token>` and bypasses SigV4
+
+Auth chain (`env-api-keys.ts:182-205`): `AWS_PROFILE` → `AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY` → `AWS_BEARER_TOKEN_BEDROCK` → container creds → IRSA.
+
+The Bedrock provider is loaded node-only and supports `setBedrockProviderModule()` override for non-node runtimes (`register-builtins.ts`).
 
 ---
 
-## Package Metadata
+## 5. Model Resolution
 
-- **Package name**: `@earendil-works/pi-ai`
-- **Version**: 0.74.0
-- **License**: MIT
-- **Author**: Mario Zechner
-- **Repository**: `github.com/earendil-works/pi-mono` (directory: `packages/ai`)
-- **Node requirement**: >= 20.0.0
-- **Module format**: ESM only (`"type": "module"`)
-- **Key dependencies**: `@anthropic-ai/sdk`, `openai`, `@google/genai`, `@mistralai/mistralai`, `@aws-sdk/client-bedrock-runtime`, `typebox`, `partial-json`
+`packages/ai/src/models.ts:20-37` defines:
+
+```ts
+function getModel<TProvider extends KnownProvider, TId extends keyof MODELS[TProvider]>(
+    provider: TProvider,
+    id: TId,
+): MODELS[TProvider][TId];
+
+function getProviders(): KnownProvider[];
+function getModels(provider: KnownProvider): Model[];
+```
+
+The `MODELS` interface is augmented by `models.generated.ts` for every provider; downstream packages can declare-merge their own provider catalogs.
+
+### 5.1 Cost calculation
+
+`models.ts:39-46`:
+
+```ts
+function calculateCost(model: Model, usage: Usage): Usage["cost"] {
+    return {
+        input:     (model.cost.input      / 1_000_000) * usage.input,
+        output:    (model.cost.output     / 1_000_000) * usage.output,
+        cacheRead: (model.cost.cacheRead  / 1_000_000) * usage.cacheRead,
+        cacheWrite:(model.cost.cacheWrite / 1_000_000) * usage.cacheWrite,
+        total: /* sum of the above */,
+    };
+}
+```
+
+Costs in `models.generated.ts` are quoted **per 1M tokens**. The streaming pipeline calls `calculateCost` automatically and attaches the result to `AssistantMessage.usage.cost`.
+
+### 5.2 Thinking level clamping
+
+`models.ts:50-80`:
+
+- `getSupportedThinkingLevels(model)` reads `model.reasoning?.thinkingLevels` or returns the canonical `["minimal","low","medium","high","xhigh"]`.
+- `clampThinkingLevel(model, level)` walks `EXTENDED_THINKING_LEVELS` and selects the nearest supported level. Models with `thinkingLevelMap` (e.g. Bedrock Claude variants) use the map's keys as the supported set.
+
+---
+
+## 6. Cross-Provider Message Transformation
+
+When a conversation begun on one model is continued on another, `transformMessages` (`packages/ai/src/providers/transform-messages.ts:1-220`) rewrites the history in two passes.
+
+### 6.1 Pass 1 — content rewrites
+
+For each `AssistantMessage` where `(model.id, model.provider, model.api)` differs from the incoming target:
+
+- **Thinking blocks** are downgraded to plain text. The receiving provider would otherwise reject signed reasoning blocks (`thoughtSignature` mismatch).
+- **Tool-call `thoughtSignature`** is stripped — the signature is provider-specific (e.g. Anthropic).
+- **Image blocks** are replaced with the placeholder `[image omitted]` when the target model is not vision-capable (`downgradeUnsupportedImages`).
+- **Tool-call IDs** are normalized via the optional `normalizeToolCallId(id)` callback. Mistral truncates to 9 chars, OpenAI keeps original IDs.
+
+Messages with `stopReason === "error"` or `"aborted"` are skipped entirely so partial state doesn't leak across providers.
+
+### 6.2 Pass 2 — orphan tool-call patching
+
+If an assistant message ends with `toolcall_*` blocks but no subsequent `ToolResultMessage` exists, a synthetic message is inserted:
+
+```ts
+{ role: "toolResult", content: "No result provided", isError: true, toolCallId: ... }
+```
+
+This satisfies providers (Anthropic, OpenAI) that reject conversations with unbalanced tool calls.
+
+### 6.3 When transformation runs
+
+The dispatch path is: `stream()` → provider entry → `transformMessages({ messages, model, normalizeToolCallId? })`. Providers that need ID normalization (Mistral) pass their callback; others rely on defaults.
+
+---
+
+## 7. Authentication
+
+### 7.1 Environment variables
+
+`packages/ai/src/env-api-keys.ts:101-129` maps each provider to one or more env vars. Highlights:
+
+| Provider | Env vars (priority) |
+|---|---|
+| `anthropic` | `ANTHROPIC_OAUTH_TOKEN` > `ANTHROPIC_API_KEY` |
+| `openai` / `openai-responses` | `OPENAI_API_KEY` |
+| `azure-openai-responses` | `AZURE_OPENAI_API_KEY` (+ `AZURE_OPENAI_DEPLOYMENT_NAME_MAP`) |
+| `openai-codex` | `OPENAI_CODEX_OAUTH_TOKEN` (refreshed via OAuth) |
+| `google` | `GEMINI_API_KEY` |
+| `google-vertex` | API key OR ADC |
+| `github-copilot` | `COPILOT_GITHUB_TOKEN` > `GH_TOKEN` > `GITHUB_TOKEN` |
+| `amazon-bedrock` | AWS chain (see §4.9) |
+| `groq` | `GROQ_API_KEY` |
+| `xai` | `XAI_API_KEY` |
+| `deepseek` | `DEEPSEEK_API_KEY` |
+| `mistral` | `MISTRAL_API_KEY` |
+| `cerebras` | `CEREBRAS_API_KEY` |
+| `openrouter` | `OPENROUTER_API_KEY` |
+| `fireworks` | `FIREWORKS_API_KEY` |
+| `cloudflare-workers-ai` | `CLOUDFLARE_AI_API_KEY` |
+| `cloudflare-ai-gateway` | `CLOUDFLARE_AI_GATEWAY_API_KEY` |
+| `zai` | `ZAI_API_KEY` |
+| `moonshotai` / `kimi-coding` | `MOONSHOT_API_KEY` / `KIMI_API_KEY` |
+| `xiaomi*` | `XIAOMI_API_KEY` |
+
+On Bun, when `process.env` is empty, `env-api-keys.ts` falls back to reading `/proc/self/environ`.
+
+### 7.2 OAuth
+
+`packages/ai/src/utils/oauth/index.ts:1-153`.
+
+Built-in OAuth providers (`BUILT_IN_OAUTH_PROVIDERS`): `anthropic`, `github-copilot`, `openai-codex`.
+
+Interface (`utils/oauth/types.ts:1-72`):
+
+```ts
+type OAuthCredentials = { refresh: string; access: string; expires: number };
+
+type OAuthProviderInterface = {
+    id: string;
+    name: string;
+    login(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials>;
+    refreshToken(refresh: string): Promise<OAuthCredentials>;
+    getApiKey(creds: OAuthCredentials): Promise<string>;
+    modifyModels?(models: Model[]): Model[];
+    usesCallbackServer?: boolean;
+};
+```
+
+`getOAuthApiKey(providerId, creds)` auto-refreshes if `Date.now() >= creds.expires`.
+
+| Provider | Flow | Callback URL |
+|---|---|---|
+| `anthropic` | PKCE | `http://localhost:53692/oauth/callback` (`utils/oauth/anthropic.ts:31-34`) |
+| `openai-codex` | PKCE | `http://localhost:1455/auth/callback` (`utils/oauth/openai-codex.ts:24-28`) |
+| `github-copilot` | Device flow | n/a — polls GitHub device-code endpoint |
+
+Custom OAuth providers: `registerOAuthProvider({ id, name, login, refreshToken, getApiKey })`. `resetOAuthProviders()` restores the built-in set (useful for tests).
+
+---
+
+## 8. Overflow Detection
+
+`packages/ai/src/utils/overflow.ts:1-153` exposes `isContextOverflow(message, contextWindow?)` that returns `true` when an `AssistantMessage` represents a context-window overflow. It handles three cases:
+
+1. **Error-text patterns** — 20 regex patterns covering Anthropic (`prompt is too long`, `request_too_large`), OpenAI (`exceeds the context window`), Google (`input token count … exceeds the maximum`), xAI (`maximum prompt length is N`), Groq, OpenRouter, llama.cpp, LM Studio, MiniMax, Kimi for Coding, Mistral, Cerebras (`400/413 (no body)`), Ollama, and generic fallbacks (`context_length_exceeded`, `too many tokens`, `token limit exceeded`). Non-overflow patterns (`rate limit`, `too many requests`, Bedrock throttling) are excluded.
+2. **Silent overflow (z.ai)** — `stopReason === "stop"` but `usage.input + usage.cacheRead > contextWindow`.
+3. **Length-stop overflow (Xiaomi MiMo)** — `stopReason === "length"` AND `usage.output === 0` AND `usage.input + usage.cacheRead >= contextWindow * 0.99` (server truncates input to fit, no room left to generate).
+
+---
+
+## 9. Registry & Extensibility
+
+### 9.1 API provider registry
+
+`packages/ai/src/api-registry.ts:1-98` keeps a `Map<string, RegisteredApiProvider>`. `registerApiProvider` wraps `stream` and `streamSimple` with an API-mismatch guard that throws `Mismatched api: X expected Y` if a caller hands a model whose `api` doesn't match the registered one. `unregisterApiProviders(sourceId)` removes all providers tagged with a given source ID — used by extension hosts to unload plugin SDKs cleanly.
+
+### 9.2 Built-in registration
+
+`packages/ai/src/providers/register-builtins.ts:1-403` defines `createLazyStream`/`createLazySimpleStream` wrappers that dynamically `import()` the provider module on first call. `registerBuiltInApiProviders()` is invoked at module load (line 403) and registers all 9 APIs. Bedrock has a node-only import path and a `setBedrockProviderModule()` override for non-node runtimes (Bun, Deno, edge).
+
+### 9.3 Faux provider (testing)
+
+`packages/ai/src/providers/faux.ts:37-126` lets tests script deterministic streams:
+
+```ts
+import { registerFauxProvider, fauxText, fauxThinking, fauxToolCall } from "@earendil-works/pi-ai";
+
+const faux = registerFauxProvider({
+    api: "openai-completions",
+    provider: "faux",
+    models: [{ id: "test-model", cost: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 }, contextWindow: 200_000, maxTokens: 8192 }],
+    tokensPerSecond: 50,
+    tokenSize: 4,
+});
+
+faux.setResponses([
+    [fauxText("Hello "), fauxText("world")],
+    [fauxThinking("planning..."), fauxToolCall("search", { q: "x" })],
+]);
+
+// stream({ model: faux.getModel("test-model"), ... }) emits scripted events.
+faux.unregister();
+```
+
+`faux.getPendingResponseCount()` and `faux.appendResponses(...)` enable iterative test scenarios.
+
+---
+
+## 10. Examples
+
+### 10.1 Single-turn streaming (Anthropic)
+
+```ts
+import { stream, getModel } from "@earendil-works/pi-ai";
+
+const model = getModel("anthropic", "claude-sonnet-4-5");
+const ev = stream({
+    model,
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+    messages: [{ role: "user", content: "Summarize Conway's Law in one sentence." }],
+});
+
+for await (const e of ev) {
+    if (e.type === "text_delta") process.stdout.write(e.delta);
+}
+const final = await ev.finalResult;
+console.log("\ncost:", final.usage.cost.total);
+```
+
+### 10.2 Tool calls with reasoning (OpenAI Responses)
+
+```ts
+import { stream, getModel } from "@earendil-works/pi-ai";
+import type { Tool } from "@earendil-works/pi-ai";
+
+const model = getModel("openai", "gpt-5.1");
+const tools: Tool[] = [{
+    name: "get_weather",
+    description: "Get the current weather",
+    inputSchema: { type: "object", properties: { city: { type: "string" } }, required: ["city"] },
+}];
+
+const ev = stream({
+    model,
+    apiKey: process.env.OPENAI_API_KEY!,
+    messages: [{ role: "user", content: "What's the weather in SF?" }],
+    tools,
+    options: { reasoningEffort: "medium", reasoningSummary: "concise" },
+});
+
+const result = await ev.finalResult;
+if (result.stopReason === "toolUse") {
+    // Execute the tool call, then continue the conversation
+    // by appending a toolResult message.
+}
+```
+
+### 10.3 Cross-provider handoff
+
+```ts
+import { stream, getModel } from "@earendil-works/pi-ai";
+
+let messages = [{ role: "user" as const, content: "Draft a sonnet about TCP." }];
+
+// Turn 1 with Anthropic
+const claude = getModel("anthropic", "claude-opus-4-7");
+const r1 = await stream({ model: claude, apiKey: anthropicKey, messages }).finalResult;
+messages = [...messages, r1];
+
+// Turn 2 hands off to OpenAI — transformMessages downgrades Claude's thinking blocks
+const gpt = getModel("openai", "gpt-5.1");
+const r2 = await stream({
+    model: gpt,
+    apiKey: openaiKey,
+    messages: [...messages, { role: "user", content: "Now critique your own poem." }],
+}).finalResult;
+```
+
+### 10.4 OAuth login (Claude Code)
+
+```ts
+import { getOAuthProvider, getOAuthApiKey } from "@earendil-works/pi-ai";
+
+const anthropic = getOAuthProvider("anthropic")!;
+const creds = await anthropic.login({
+    onPrompt: (url) => console.log(`Open ${url} in your browser`),
+    onAuth:   (c)   => persistToDisk(c),
+});
+
+// Later — auto-refresh if expired
+const apiKey = await getOAuthApiKey("anthropic", creds);
+```
+
+### 10.5 Overflow guard + retry on smaller model
+
+```ts
+import { complete, getModel, isContextOverflow } from "@earendil-works/pi-ai";
+
+async function safeComplete(messages: Message[]) {
+    const primary = getModel("anthropic", "claude-opus-4-7");
+    const result = await complete({ model: primary, apiKey: key, messages });
+
+    if (isContextOverflow(result, primary.contextWindow)) {
+        const fallback = getModel("google", "gemini-2.5-pro");
+        return complete({ model: fallback, apiKey: geminiKey, messages });
+    }
+    return result;
+}
+```
+
+---
+
+## 11. Session Resources
+
+`packages/ai/src/session-resources.ts` (exported from `index.ts:1-43`):
+
+```ts
+import { registerSessionResourceCleanup, cleanupSessionResources } from "@earendil-works/pi-ai";
+
+registerSessionResourceCleanup("my-extension", async () => {
+    await closeOpenAICodexWebSocketSessions();
+});
+
+// On shutdown:
+await cleanupSessionResources();
+```
+
+Introduced in v0.73.0 to give host applications a coordination point for closing long-lived sockets (Codex WebSocket sessions, persistent HTTP keep-alives).
+
+---
+
+## 12. Discrepancies with DeepWiki
+
+Items in the published DeepWiki summary that no longer match v0.74.0:
+
+1. **Xiaomi endpoint.** DeepWiki documents `xiaomi` as routing to `xiaomi-token-plan-ams`. v0.73.0 made this BREAKING — `xiaomi` now hits `api.xiaomimimo.com` directly, and three explicit regional providers exist: `xiaomi-token-plan-cn`, `xiaomi-token-plan-ams`, `xiaomi-token-plan-sgp`.
+2. **Codex transport.** DeepWiki lists Codex as SSE-only. v0.74.0 supports `transport: "websocket" | "websocket-cached"` with 5-minute session caching and exported debug helpers (`getOpenAICodexWebSocketDebugStats`, `resetOpenAICodexWebSocketDebugStats`, `closeOpenAICodexWebSocketSessions`).
+3. **OAuth providers.** DeepWiki shows `anthropic` only. v0.74.0 ships built-in OAuth for `anthropic`, `openai-codex`, AND `github-copilot` (device flow).
+4. **Length-stop overflow.** DeepWiki's overflow detection covers only error messages. v0.74.0 additionally detects Xiaomi MiMo's silent truncation (`stopReason === "length"` + `output === 0` + input ≥ 99% of context window).
+5. **Session resource cleanup.** `registerSessionResourceCleanup` / `cleanupSessionResources` are not yet in DeepWiki.
+6. **Bedrock bearer token.** `bearerToken` option (and `AWS_BEARER_TOKEN_BEDROCK` env var) bypassing SigV4 is not in DeepWiki.
+7. **Azure deployment map.** `AZURE_OPENAI_DEPLOYMENT_NAME_MAP` (comma-separated `model-id=deployment`) is undocumented in DeepWiki.
+
+---
+
+## 13. References
+
+All paths are relative to the pi-mono monorepo at tag `v0.74.0` (commit `1eee081e`).
+
+| Topic | Path |
+|---|---|
+| Package manifest | `packages/ai/package.json` |
+| Root exports | `packages/ai/src/index.ts:1-43` |
+| Core types | `packages/ai/src/types.ts` |
+| Stream entry points | `packages/ai/src/stream.ts:1-59` |
+| API registry | `packages/ai/src/api-registry.ts:1-98` |
+| Env var resolution | `packages/ai/src/env-api-keys.ts:1-209` |
+| Built-in registration | `packages/ai/src/providers/register-builtins.ts:1-403` |
+| Message transformation | `packages/ai/src/providers/transform-messages.ts:1-220` |
+| Anthropic provider | `packages/ai/src/providers/anthropic.ts` |
+| OpenAI Completions | `packages/ai/src/providers/openai-completions.ts` |
+| OpenAI Responses | `packages/ai/src/providers/openai-responses.ts` |
+| OpenAI Codex Responses | `packages/ai/src/providers/openai-codex-responses.ts` |
+| Azure OpenAI Responses | `packages/ai/src/providers/azure-openai-responses.ts` |
+| Google GenAI | `packages/ai/src/providers/google.ts` |
+| Google Vertex | `packages/ai/src/providers/google-vertex.ts` |
+| Mistral | `packages/ai/src/providers/mistral.ts` |
+| Amazon Bedrock | `packages/ai/src/providers/amazon-bedrock.ts` |
+| Faux provider | `packages/ai/src/providers/faux.ts:37-126` |
+| OAuth registry | `packages/ai/src/utils/oauth/index.ts:1-153` |
+| OAuth types | `packages/ai/src/utils/oauth/types.ts:1-72` |
+| Anthropic OAuth | `packages/ai/src/utils/oauth/anthropic.ts:31-34` |
+| Codex OAuth | `packages/ai/src/utils/oauth/openai-codex.ts:24-28` |
+| Event stream | `packages/ai/src/utils/event-stream.ts:1-88` |
+| Overflow detection | `packages/ai/src/utils/overflow.ts:1-153` |
+| Model catalog | `packages/ai/src/models.generated.ts` |
+| Cost / clamping | `packages/ai/src/models.ts:1-92` |
+| Quick-start example | `packages/ai/README.md:85-203` |
+| Faux example | `packages/ai/README.md:647-715` |
+| Cross-provider example | `packages/ai/README.md:910-963` |
+| Env var table | `packages/ai/README.md:1031-1056` |
+| OAuth section | `packages/ai/README.md:1080-1219` |
+| Adding a provider | `packages/ai/README.md:1222-1310` |
+| Changelog | `packages/ai/CHANGELOG.md` (v0.73.0 BREAKING xiaomi, v0.73.1 OAuth metadata, v0.74.0) |

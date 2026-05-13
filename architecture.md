@@ -8,32 +8,34 @@ Pi is a TypeScript monorepo (`pi-mono`) using npm workspaces. All packages share
 
 ```
 Foundation Layer
-└── @earendil-works/pi-ai
-    Unified streaming API over 23+ LLM providers
-    Model catalog, token/cost tracking, OAuth utilities
-    9 distinct wire protocol implementations
-
-Infrastructure Layer
-├── @earendil-works/pi-agent-core
-│   Stateless agentLoop() + stateful Agent class
-│   Tool execution loop, lifecycle events
-│   Parallel/sequential tool execution
+├── @earendil-works/pi-ai
+│   Unified streaming API for the supported LLM providers
+│   Model catalog, token/cost tracking, OAuth utilities
+│   Built-in API protocols: openai-completions, openai-responses,
+│     openai-codex-responses, anthropic-messages, bedrock-converse-stream,
+│     google-generative-ai, google-vertex, mistral-conversations,
+│     azure-openai-responses
 │
 └── @earendil-works/pi-tui
     Terminal UI with differential rendering
     Overlay system, editor, input, markdown rendering
 
+Infrastructure Layer
+└── @earendil-works/pi-agent-core
+    Stateless agentLoop() + stateful Agent class
+    Tool execution loop, lifecycle events
+    Parallel/sequential tool execution
+
 Application Layer
 ├── @earendil-works/pi-coding-agent  (pi binary)
-│   Interactive CLI, AgentSession, SessionManager
+│   Interactive CLI, AgentSession + AgentSessionRuntime, SessionManager
 │   ExtensionRunner, SettingsManager, package management
 │
-├── @earendil-works/pi-web-ui
-│   Browser web components for AI chat
-│   IndexedDB storage, artifact system, tool renderers
-│
-└── Historical packages removed before v0.70.0:
-    @mariozechner/pi-mom and legacy pods package
+└── @earendil-works/pi-web-ui
+    Browser web components for AI chat
+    IndexedDB storage, artifact system, tool renderers
+
+(Legacy `pi-mom` and `pi-pods` packages were removed between v0.70.6 and v0.71.0 in commit `0ed0d434`. For Slack/chat automation, see external repo `earendil-works/pi-chat`.)
 ```
 
 ---
@@ -77,19 +79,21 @@ AgentEvent stream → TUI rendering (pi-tui differential render)
 
 ## pi-ai: Provider Abstraction
 
-### API Implementations (9 Wire Protocols)
+### API Implementations (Wire Protocols)
 
 | API ID | Protocol | Used By |
 |--------|---------|---------|
-| `openai-completions` | OpenAI Chat Completions | OpenAI, Groq, Cerebras, LM Studio, Ollama, OpenRouter, custom |
-| `openai-responses` | OpenAI Responses API | OpenAI, openrouter |
-| `openai-codex-responses` | Codex WebSocket | openai-codex |
-| `anthropic-messages` | Anthropic Messages API | anthropic, github-copilot, kimi-for-coding |
-| `bedrock-converse-stream` | AWS Bedrock Converse | amazon-bedrock |
-| `google-generative-ai` | Google Generative AI | google |
-| `google-vertex` | Vertex AI | google-vertex |
-| `mistral-conversations` | Mistral native SDK | mistral |
-| `azure-openai-responses` | Azure OpenAI Responses | azure-openai-responses |
+| `openai-completions` | OpenAI Chat Completions | OpenAI-compatible providers (Groq, Cerebras, DeepSeek, Cloudflare, Moonshot, Zai, OpenRouter, custom local servers) |
+| `openai-responses` | OpenAI Responses API | OpenAI, OpenRouter |
+| `openai-codex-responses` | Codex WebSocket / SSE | `openai-codex` |
+| `anthropic-messages` | Anthropic Messages API | `anthropic`, `github-copilot`, `kimi-coding`, `xiaomi`, Fireworks |
+| `bedrock-converse-stream` | AWS Bedrock Converse | `amazon-bedrock` |
+| `google-generative-ai` | Google Generative AI | `google` |
+| `google-vertex` | Vertex AI | `google-vertex` |
+| `mistral-conversations` | Mistral native SDK | `mistral` |
+| `azure-openai-responses` | Azure OpenAI Responses | `azure-openai-responses` |
+
+The 4 protocols a user-defined provider in `models.json` may name via `api:` are: `openai-completions`, `openai-responses`, `anthropic-messages`, `google-generative-ai`. The rest are bound to specific built-in providers.
 
 ### Model Registry
 
@@ -294,3 +298,5 @@ All packages extend `tsconfig.base.json`:
 
 Build order (enforced by monorepo build script):
 `tui -> ai -> agent -> coding-agent -> web-ui`
+
+TypeBox dependency migrated to the `typebox` 1.x package in v0.69.0 (was `@sinclair/typebox` 0.34); the legacy import alias is kept for backwards compatibility.

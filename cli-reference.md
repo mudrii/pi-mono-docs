@@ -18,7 +18,12 @@ If `--print`/`-p` is provided, or stdin is piped, pi runs non-interactively and 
 
 | Flag | Description |
 |------|-------------|
+| `--provider <name>` | Provider name (e.g., `anthropic`, `openai`, `openai-codex`) |
 | `--model <ref>` | Select model at startup. Accepts exact ID, `provider/id`, fuzzy name, glob, or `name:thinking` (e.g., `sonnet:high`) |
+| `--models <patterns>` | Comma-separated model patterns for Ctrl+P cycling (supports globs and fuzzy match) |
+| `--api-key <key>` | API key for the resolved provider (overrides env / `auth.json`) |
+| `--system-prompt <text>` | Replace the default system prompt |
+| `--append-system-prompt <text\|@file>` | Append to the default system prompt (repeatable) |
 | `--thinking <level>` | Thinking level: `off`, `minimal`, `low`, `medium`, `high`, `xhigh` |
 | `--continue`, `-c` | Continue the previous session |
 | `--resume`, `-r` | Open the session picker |
@@ -28,16 +33,25 @@ If `--print`/`-p` is provided, or stdin is piped, pi runs non-interactively and 
 | `--no-session` | Run ephemerally without saving a session |
 | `--print`, `-p` | Non-interactive mode: process prompt/stdin and exit |
 | `--no-print` | In print mode, suppress model output to stdout |
-| `--mode json` | Output JSONL event stream (for scripting) |
-| `--mode rpc` | Run in RPC mode (LF-delimited JSONL over stdin/stdout) |
-| `--offline` | Disable startup network operations |
-| `--verbose` | Enable verbose logging |
+| `--mode <mode>` | Output mode: `text` (default), `json`, or `rpc` |
+| `--offline` | Disable startup network operations (same as `PI_OFFLINE=1`) |
+| `--verbose` | Force verbose startup (overrides `quietStartup`) |
+| `--extension`, `-e <path>` | Load an extension file (repeatable) |
 | `--no-extensions`, `-ne` | Disable extension discovery; explicit `--extension` paths still work |
+| `--skill <path>` | Load a skill file or directory (repeatable) |
 | `--no-skills`, `-ns` | Disable skills discovery and loading |
+| `--prompt-template <path>` | Load a prompt template file or directory (repeatable) |
 | `--no-prompt-templates`, `-np` | Disable prompt template discovery and loading |
+| `--theme <path>` | Load a theme file or directory (repeatable) |
+| `--no-themes` | Disable theme discovery and loading |
+| `--no-context-files`, `-nc` | Disable `AGENTS.md` and `CLAUDE.md` discovery and loading |
 | `--no-tools`, `-nt` | Disable all tools by default, including built-in and extension tools |
 | `--no-builtin-tools`, `-nbt` | Disable built-in tools while keeping extension/custom tools enabled |
 | `--tools`, `-t <tools>` | Comma-separated allowlist of built-in, extension, or custom tool names |
+| `--export <file>` | Export session file to HTML and exit |
+| `--list-models [search]` | List available models (with optional fuzzy search) |
+| `--help`, `-h` | Show CLI help |
+| `--version`, `-v` | Show version |
 
 > **Note (v0.65.0):** Unknown single-dash flags now produce an error instead of being silently ignored. For example, `-s` will error. Use the full `--session` flag instead.
 
@@ -52,8 +66,8 @@ echo "Explain async/await" | pi --mode json
 ### Model Reference Formats
 
 ```bash
-pi --model claude-opus-4-6            # Exact model ID
-pi --model anthropic/claude-opus-4-6  # Provider-qualified
+pi --model claude-opus-4-7            # Exact model ID
+pi --model anthropic/claude-opus-4-7  # Provider-qualified
 pi --model opus                        # Fuzzy match
 pi --model '*sonnet*'                  # Glob pattern
 pi --model sonnet:high                 # With thinking level

@@ -27,7 +27,7 @@ The repository uses npm workspaces. All five packages live under `packages/`:
 | Package | npm Name | Directory | Description |
 |---------|----------|-----------|-------------|
 | **pi-tui** | `@earendil-works/pi-tui` | `packages/tui` | Terminal UI library with differential rendering, synchronized output (CSI 2026), component system, inline images, and autocomplete |
-| **pi-ai** | `@earendil-works/pi-ai` | `packages/ai` | Unified multi-provider LLM API supporting 26+ providers (OpenAI, Anthropic, Google, Mistral, Bedrock, Fireworks, etc.) with automatic model discovery, token/cost tracking, and cross-provider handoffs |
+| **pi-ai** | `@earendil-works/pi-ai` | `packages/ai` | Unified multi-provider LLM API supporting 31 released provider IDs (OpenAI, Anthropic, Google, Mistral, Bedrock, Fireworks, etc.) with automatic model discovery, token/cost tracking, and cross-provider handoffs |
 | **pi-agent-core** | `@earendil-works/pi-agent-core` | `packages/agent` | Stateful agent runtime with tool execution, event streaming, transport abstraction, and state management |
 | **pi-coding-agent** | `@earendil-works/pi-coding-agent` | `packages/coding-agent` | Interactive coding agent CLI with session management, extension system, skills, prompt templates, and themes |
 | **pi-web-ui** | `@earendil-works/pi-web-ui` | `packages/web-ui` | Web components (built with mini-lit and Tailwind CSS v4) for AI chat interfaces with attachments, artifacts, IndexedDB storage, and CORS proxy support |
@@ -256,7 +256,7 @@ The coding agent ships with only four tools (read, write, edit, bash) and delibe
 
 ### Provider Agnosticism
 
-pi-ai supports 26+ LLM providers through a unified streaming API. Only models with tool-calling support are included, since tool use is essential for agentic workflows. Providers are lazily loaded to avoid bundling unused SDKs.
+pi-ai supports 31 released LLM provider IDs in v0.74.0 (per `packages/ai/src/types.ts:19-50` `KnownProvider` union) through a unified streaming API. Only models with tool-calling support are included, since tool use is essential for agentic workflows. Providers are lazily loaded via subpath exports (e.g., `@earendil-works/pi-ai/anthropic`) to avoid bundling unused SDKs.
 
 ### Layered SDK
 

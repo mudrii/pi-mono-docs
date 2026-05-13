@@ -18,16 +18,16 @@ Project files (`.pi/`) take precedence over user-global (`~/.pi/agent/`).
 
 ---
 
-## AGENTS.md — Project Instructions
+## AGENTS.md and CLAUDE.md — Project Instructions
 
-`AGENTS.md` files provide project-specific instructions to the agent. They are discovered automatically:
+`AGENTS.md` (and the alias `CLAUDE.md`) files provide project-specific instructions to the agent. They are discovered automatically:
 
 **Discovery order:**
-1. `cwd/AGENTS.md`
-2. Parent directory `AGENTS.md`
+1. `cwd/AGENTS.md` (and `cwd/CLAUDE.md`)
+2. Parent directory `AGENTS.md` / `CLAUDE.md`
 3. ... up to the git repository root
 
-All found files are concatenated, outermost to innermost. This allows repo-wide rules in the root and component-specific rules in subdirectories.
+All found files are concatenated, outermost to innermost. This allows repo-wide rules in the root and component-specific rules in subdirectories. Disable discovery entirely with `--no-context-files` / `-nc`.
 
 ### Example AGENTS.md
 

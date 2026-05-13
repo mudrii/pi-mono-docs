@@ -483,14 +483,18 @@ Each known provider has a default model ID:
 
 | Provider | Default Model |
 |----------|--------------|
-| anthropic | claude-opus-4-6 |
+| anthropic | claude-opus-4-7 |
 | openai | gpt-5.4 |
-| google | gemini-2.5-pro |
-| xai | grok-4-fast-non-reasoning |
-| openrouter | openai/gpt-5.1-codex |
-| kimi-coding | kimi-k2-thinking |
+| openai-codex | gpt-5.5 |
+| google | gemini-3.1-pro-preview |
+| google-vertex | gemini-3.1-pro-preview |
+| xai | grok-4.20-0309-reasoning |
+| openrouter | moonshotai/kimi-k2.6 |
+| kimi-coding | kimi-for-coding |
+| xiaomi | mimo-v2.5-pro |
+| amazon-bedrock | us.anthropic.claude-opus-4-6-v1 |
 
-(See `model-resolver.ts` for the complete list.)
+(See `packages/coding-agent/src/core/model-resolver.ts:14-46` for the complete `defaultModelPerProvider` map.)
 
 ## Session Selector and Navigation
 

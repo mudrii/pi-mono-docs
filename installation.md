@@ -86,7 +86,7 @@ Values prefixed with `!` are resolved as shell commands (useful for 1Password, V
 
 ### Windows
 
-Pi runs on Windows via Git Bash or WSL. See the project's `docs/windows.md` for:
+Pi runs on Windows via Git Bash or WSL. See `packages/coding-agent/docs/windows.md` for:
 - Terminal configuration (Windows Terminal recommended)
 - Shell handling details
 - WSL2 integration
@@ -109,11 +109,11 @@ echo "You are running on Android in Termux." > ~/.pi/agent/AGENTS.md
 pi
 ```
 
-See `docs/termux.md` in the repo for additional setup steps.
+See `packages/coding-agent/docs/termux.md` in the repo for additional setup steps.
 
 ### tmux
 
-Shift+Enter works in tmux with no configuration changes. See `docs/tmux.md` for key handling details.
+Shift+Enter works in tmux with no configuration changes. See `packages/coding-agent/docs/tmux.md` for key handling details.
 
 ---
 

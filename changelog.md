@@ -1,6 +1,10 @@
 # Changelog
 
-All current pi-mono releases follow lockstep versioning for the five active packages (`pi-ai`, `pi-tui`, `pi-agent-core`, `pi-coding-agent`, `pi-web-ui`). Starting with v0.74.0, active packages are published under `@earendil-works/*`.
+All current pi-mono releases follow lockstep versioning for the five active packages (`pi-ai`, `pi-tui`, `pi-agent-core`, `pi-coding-agent`, `pi-web-ui`). Starting with v0.74.0, active packages are published under `@earendil-works/*`. The previous `@mariozechner/*` packages remain published for older installs and stop at v0.73.1. `@mariozechner/pi-mom` and `@mariozechner/pi-pods` were removed from the monorepo at v0.71.0.
+
+> **Released vs Unreleased** — v0.74.0 (2026-05-07) is the latest released cut. Anything on `main` after that commit is unreleased and is documented separately in [Era 9](./09-version-history.md#main-after-v0740-unreleased) of the detailed version history.
+
+This document is the concise top-level changelog. For per-release breakdowns with PR/issue links and granular package-level notes, see [`09-version-history.md`](./09-version-history.md).
 
 ---
 
@@ -522,51 +526,330 @@ All current pi-mono releases follow lockstep versioning for the five active pack
 
 ---
 
-## v0.51.0 — 2026-02-02
-
-**Features:**
-- Various provider and stability improvements
+## v0.51.4 — 2026-02-03
+- `coding-agent`: Share URLs default to **pi.dev** (donated by exe.dev)
 
 ---
 
-## v0.50.0 — 2026-01-26
-
-**Features:**
-- Extended context windows
-- Provider stability improvements
-
----
-
-## v0.49.0 — 2026-01-17
-
-Initial public releases in the `0.49.x` series.
+## v0.51.0 — 2026-02-01 *(Breaking)*
+- **Breaking** `coding-agent`: Extension `ToolDefinition.execute` parameter order changed
+- `coding-agent`: Android/Termux support; Linux ARM64 musl prebuilds
+- `coding-agent`: Bash spawn hook for extensions; Nix/Guix support via `PI_PACKAGE_DIR`
+- `coding-agent`: Named-session filter in `/resume`
 
 ---
 
-## v0.48.0 — 2026-01-17
-
-First broadly available release. Established the core architecture:
-
-- 7-package monorepo with lockstep versioning
-- `pi-ai`: 23+ LLM providers, 9 wire protocols
-- `pi-agent-core`: Stateful agent with parallel tool execution
-- `pi-tui`: Differential terminal rendering, Kitty graphics protocol
-- `pi-coding-agent`: Interactive coding CLI with 4 built-in tools
-- `pi-web-ui`: Lit-based web components, IndexedDB storage
-- `pi-mom`: Slack bot with self-managing capabilities
-- `pi-pods`: GPU pod management for vLLM inference
+## v0.50.0 — 2026-01-26 *(Breaking — Pi packages)*
+- **Breaking** `coding-agent`: External packages now configured via `packages` array, not `extensions`
+- `coding-agent`: **Pi package system** — bundle and install extensions, skills, prompts, themes via `pi install/remove/update/list/config`
+- `coding-agent`: Hot reload of all resources (`/reload`)
+- `coding-agent`: Custom providers via `pi.registerProvider()`
+- `ai`: Azure OpenAI Responses provider; OpenRouter routing controls
+- `ai`: Hugging Face provider; Vercel AI Gateway provider
 
 ---
 
-## Earlier Releases
+## v0.49.0–v0.49.3 — 2026-01-17 to 2026-01-22
+- `coding-agent`: Emacs-style kill-ring editing
+- `coding-agent`: `ctx.compact()` and `ctx.getContextUsage()` exposed to extensions
+- `web-ui`: tsgo bumped to 7.0.0-dev.20260120.1 for decorator support
 
-Releases prior to v0.48.0 are available in the git tag history:
+---
+
+## v0.48.0 — 2026-01-16
+- `coding-agent`: `quietStartup`, `shellCommandPrefix`, `editorPaddingX` settings
+- `coding-agent`: Extension command argument autocompletions
+
+---
+
+## v0.47.0 — 2026-01-16 *(Breaking)*
+- **Breaking** `tui`: `Editor` constructor now requires `TUI` as first parameter
+- `coding-agent`: **OpenAI Codex official support** with full compatibility
+- `coding-agent`: IME / hardware-cursor support, `input` extension event
+- `coding-agent`: `pi-internal://` URL scheme for the read tool
+
+---
+
+## v0.46.0 — 2026-01-15
+- `coding-agent`: Edit tool fuzzy-match fallback; `APPEND_SYSTEM.md` support
+- `ai`: MiniMax China provider
+- `tui`: Kitty keyboard layout fixes for non-Latin layouts
+
+---
+
+## v0.45.0 — 2026-01-13
+- `ai`: MiniMax provider; Amazon Bedrock provider (experimental)
+- `ai`: Vercel AI Gateway provider; `serviceTier`; OpenRouter Anthropic caching
+- `coding-agent`: Share URLs migrated from `shittycodingagent.ai` to `buildwithpi.ai`
+
+---
+
+## v0.44.0 — 2026-01-12 *(Breaking)*
+- **Breaking** `coding-agent`: `pi.getAllTools()` returns `ToolInfo[]` instead of `string[]`
+- `coding-agent`: Session naming via `/name` command
+
+---
+
+## v0.42.0 — 2026-01-09
+- `ai` / `coding-agent`: OpenCode Zen provider support
+- `coding-agent`: Anthropic OAuth support restored
+
+---
+
+## v0.39.0 — 2026-01-08 *(Breaking)*
+- **Breaking** `coding-agent`: `before_agent_start` event returns `systemPrompt` instead of `systemPromptAppend`
+- `coding-agent`: Pluggable operations for built-in tools (remote execution)
+- `tui`: Experimental overlay compositing for `ctx.ui.custom()`
+
+---
+
+## v0.38.0 — 2026-01-08 *(Breaking)*
+- **Breaking** `coding-agent`: `ctx.ui.custom()` factory signature changed
+- `coding-agent`: `--no-extensions` flag; SDK exports; `thinkingBudgets` setting
+- `ai`: Removed OpenAI Codex per-thinking-level model aliases
+
+---
+
+## v0.37.0 — 2026-01-05 *(Breaking)*
+- **Breaking** `ai`: OpenAI Codex models no longer have per-thinking-level variants
+- `coding-agent`: Headless OAuth support for all providers
+
+---
+
+## v0.36.0 — 2026-01-05
+- `ai` / `coding-agent`: **OpenAI Codex OAuth provider** (experimental)
+
+---
+
+## v0.35.0 — 2026-01-05 *(Breaking — Extensions unification)*
+- **Breaking** `coding-agent`: Hooks and custom tools unified into single **extensions** system
+- **Breaking** `coding-agent`: "Slash commands" renamed to **prompt templates**
+- **Breaking** `coding-agent`: `HookAPI` → `ExtensionAPI`, `CustomTool` → `ToolDefinition`
+- `coding-agent`: Auto-migration of `hooks/`, `tools/` → `extensions/`; `commands/` → `prompts/`
+- `coding-agent`: `--hook` / `--tool` CLI flags → `--extension`
+
+---
+
+## v0.34.0 — 2026-01-04
+- `coding-agent`: Hook API additions: `setActiveTools`, `registerFlag`, `registerShortcut`, `setWidget`
+- `coding-agent`: Plan-mode example hook
+- `tui`: `SymbolKey`, `getExpandedText`
+
+---
+
+## v0.33.0 — 2026-01-04 *(Breaking)*
+- **Breaking** `tui`: All `isXxx()` key-detection functions removed, replaced with `matchesKey()`
+- `coding-agent`: Clipboard image paste via Ctrl+V
+- `coding-agent`: Configurable keybindings via `keybindings.json`
+- `coding-agent`: `/quit` and `/exit` aliases
+
+---
+
+## v0.32.0 — 2026-01-03 *(Breaking)*
+- **Breaking** `agent`: Queue API replaced with `steer()` / `followUp()` (different delivery semantics)
+- `ai`: Vertex AI provider support
+- `coding-agent`: `!!command` for shell commands excluded from LLM context
+- `coding-agent`: Image auto-resize
+
+---
+
+## v0.31.0 — 2026-01-02 *(Major architectural release — Session trees)*
+- **Breaking** `ai`: Agent API moved to `@earendil-works/pi-agent-core`
+- **Breaking** `agent-core`: Transport abstraction removed; `AppMessage` renamed to `AgentMessage`
+- **Breaking** `web-ui`: Agent class moved to `@earendil-works/pi-agent-core`
+- **Breaking** `agent`: Queue API replaced with `steer()` / `followUp()`
+- `coding-agent`: **Session trees** — tree structure with `id`/`parentId`, in-place branching via `/tree`
+- `coding-agent`: Structured compaction with file tracking
+- `coding-agent`: `/share` command for shareable session URLs via `shittycodingagent.ai`
+- `coding-agent`: RPC protocol migration
+
+---
+
+## v0.29.0 — 2025-12-25 *(Breaking)*
+- **Breaking** `coding-agent`: Renamed `/clear` to `/new`
+- `coding-agent`: Unified `/settings` command; `SYSTEM.md` auto-loading
+
+---
+
+## v0.28.0 — 2025-12-25 *(Breaking)*
+- **Breaking** `ai`: OAuth storage removed — callers now manage credentials
+- `coding-agent`: Credential storage refactored to `auth.json`
+- `coding-agent`: `AuthStorage` and `ModelRegistry` classes
+
+---
+
+## v0.26.0 — 2025-12-22
+- `coding-agent`: **SDK for programmatic usage** — `createAgentSession()` factory
+- `coding-agent`: Project-specific settings (`.pi/settings.json`)
+
+---
+
+## v0.25.0 — 2025-12-20
+- `ai` / `coding-agent`: **Google Gemini CLI OAuth provider** (free Gemini access)
+- `ai` / `coding-agent`: **Google Antigravity OAuth provider** (free Gemini 3, Claude, GPT access)
+- `coding-agent`: Interruptible tool execution
+
+---
+
+## v0.24.0 — 2025-12-19 *(Breaking)*
+- **Breaking** `coding-agent`: Custom tools require an `index.ts` entry point
+- `coding-agent`: Subagent orchestration example
+- `tui`: Kitty keyboard protocol support
+- `coding-agent`: Dynamic API-key refresh for OAuth tokens
+
+---
+
+## v0.23.4 — 2025-12-18
+- `coding-agent`: Syntax highlighting for code blocks, read tool, and write tool output
+
+---
+
+## v0.23.0 — 2025-12-17 *(Breaking)*
+- **Breaking** `coding-agent`: Replaced `session_start` / `session_switch` hooks with unified `session` event
+- `coding-agent`: **Custom tools** — extend pi with TypeScript tools having custom TUI rendering
+
+---
+
+## v0.22.3 — 2025-12-16
+- `coding-agent`: **Streaming bash output** in real time during execution
+- `agent`: Tool result streaming (`tool_execution_update` event)
+
+---
+
+## v0.22.0 — 2025-12-15
+- `ai` / `coding-agent`: **GitHub Copilot provider** via OAuth login
+- `ai`: Interleaved thinking for Anthropic Claude 4 models
+
+---
+
+## v0.21.0 — 2025-12-14
+- `coding-agent`: **Inline image rendering** via Kitty graphics protocol and iTerm2
+- `ai`: Gemini 3 Pro thinking support
+
+---
+
+## v0.20.0 — 2025-12-13 *(Breaking)*
+- **Breaking** `coding-agent`: Skills must use `SKILL.md` convention in directories
+
+---
+
+## v0.19.0 — 2025-12-12
+- `coding-agent`: **Skills system** — auto-discover instruction files from Claude Code, Codex CLI, and Pi-native paths
+
+---
+
+## v0.18.2 — 2025-12-11
+- `coding-agent`: Auto-retry on transient errors (429, 5xx) with exponential backoff
+
+---
+
+## v0.18.1 — 2025-12-10
+- `ai` / `coding-agent`: **Mistral provider** support
+
+---
+
+## v0.18.0 — 2025-12-10
+- `coding-agent`: **Hooks system** — TypeScript modules extending agent behavior via lifecycle events (`tool_call`, `tool_result`, `session_start`, etc.)
+- `coding-agent`: `pi.send()` API for injecting messages; `--hook` CLI flag
+- `coding-agent`: Hook UI primitives: `ctx.ui.select()`, `confirm()`, `input()`, `notify()`
+
+---
+
+## v0.17.0 — 2025-12-09 *(Breaking)*
+- **Breaking** `ai`: Removed provider-level tool-argument validation
+- `coding-agent`: Simplified compaction flow
+- `agent`: `agentLoopContinue` function
+
+---
+
+## v0.16.0 — 2025-12-09 *(Breaking)*
+- **Breaking** `coding-agent`: Completely redesigned RPC protocol with new JSON framing
+
+---
+
+## v0.15.0 — 2025-12-09
+- `coding-agent`: Major code refactoring into `core/`, `modes/`, `utils/`, `cli/` directories
+
+---
+
+## v0.14.0 — 2025-12-08
+- `ai`: `xhigh` thinking level for OpenAI codex-max models
+- `coding-agent`: Bash mode — execute shell commands with `!` prefix directly from editor
+- `coding-agent`: OpenAI compatibility overrides in `models.json`
+
+---
+
+## v0.13.0 — 2025-12-06 *(Breaking)*
+- **Breaking** `ai`: Added `totalTokens` to `Usage` type
+- `coding-agent`: Windows shell configuration for bash tool
+
+---
+
+## v0.12.10 — 2025-12-04
+- `ai` / `coding-agent`: `gpt-5.1-codex-max` model support
+- `ai`: Fixed OpenAI token counting; Claude Opus 4.5 cache pricing
+
+---
+
+## v0.12.7 — 2025-12-04
+- `coding-agent`: **Context compaction** — `/compact`, `/autocompact`, automatic compaction at threshold
+- `coding-agent`: HTML export support for compaction
+
+---
+
+## v0.12.0 — 2025-12-02
+- `coding-agent`: Print mode (`-p`, `-P`); `--print-turn` for multi-turn
+- `coding-agent`: `--no-markdown`; auto-save in print mode; thinking level CLI flags
+
+---
+
+## v0.11.0 — 2025-11-29
+- `coding-agent`: File-based slash commands
+- `coding-agent`: `/branch` command for conversation branching
+- `coding-agent`: Drag-and-drop files; `@path` content references
+- `coding-agent`: Model selector with search
+
+---
+
+## v0.10.2 — 2025-11-26
+- `coding-agent`: Thinking-level persistence; model cycling (Ctrl+I)
+- `coding-agent`: Automatic retry with backoff; token usage/cost in footer
+- `coding-agent`: `--system-prompt` flag
+
+---
+
+## v0.10.1 — 2025-11-25
+- `coding-agent`: Custom model configuration via `~/.pi/models.json`
+
+---
+
+## v0.10.0 — 2025-11-25 *(Initial public release)*
+- First public npm release of `@mariozechner/pi-coding-agent`
+- `coding-agent`: Interactive TUI with streaming responses
+- `coding-agent`: Session management; tools (`read`, `write`, `edit`, `bash`, `glob`, `grep`, `think`)
+- `coding-agent`: Thinking mode for Claude
+- `coding-agent`: `@` file autocompletion; `/export` HTML export; `/model` runtime switching
+- `coding-agent`: Anthropic / OpenAI / Google provider support
+- `ai`: Initial release with multi-provider LLM support
+
+---
+
+## Earlier Releases (Pre-v0.10.0)
+
+The `v0.0.1` through `v0.9.4` tags represent pre-release development.
+
+- `v0.9.4` (2025-11-26): Initial `pi-ai` release with Anthropic, OpenAI, Google provider support
+- `v0.0.1` – `v0.5.x`: Internal prototyping
 
 ```bash
 git tag --sort=-version:refname   # List all releases
-git show v0.7.22                  # View a specific release commit
+git show v0.10.0                  # First public release
 ```
 
-Notable early versions: `v0.7.x`, `v0.6.0`, `v0.5.x`, `v0.0.1`, `v0.0.2`.
+The pre-v0.10.0 history reflects rapid iteration before the monorepo structure was stabilized and the first public release was cut.
 
-The repository and its early history (pre-v0.48) reflect rapid iteration before the monorepo structure was stabilized.
+---
+
+## Released vs Unreleased Boundary
+
+**v0.74.0 (2026-05-07) is the cut.** Anything landing on `main` after that commit is unreleased and must not be documented as a shipped feature until a post-v0.74.0 tag exists. See [Era 9](./09-version-history.md#era-9-scope-migration-and-final-old-scope-releases-v0730--v0740-2026-05-04-to-2026-05-07) in the detailed version history for the in-flight items currently sitting on `main`.

@@ -6,12 +6,13 @@ Pi's extension system is the primary way to add functionality. Extensions are Ty
 
 ## Extension Loading Order
 
-1. Built-in tools (`read`, `write`, `edit`, `bash`)
-2. User-global extensions (`~/.pi/agent/extensions/`)
-3. Project-level extensions (`.pi/extensions/`)
-4. Installed packages (`pi install <package>`)
+1. Built-in tools (`read`, `bash`, `edit`, `write` active by default; `grep`, `find`, `ls` available)
+2. Project-level extensions (`.pi/extensions/`) — auto-discovered
+3. User-global extensions (`~/.pi/agent/extensions/`) — auto-discovered
+4. Configured `extensions` paths from `settings.json` or `--extension`
+5. Installed packages (`pi install <source>`) listed in `settings.json` `packages`
 
-Extensions are loaded in this order; project extensions can override user-global ones.
+First registration wins on conflicts. Project extensions take precedence over user-global; explicit `extensions` paths layered next; package extensions last. Pi loads each extension only once even if multiple discovery routes resolve to the same absolute path.
 
 ---
 
@@ -36,11 +37,11 @@ An extension is a JavaScript/TypeScript file with a default export function:
 
 ```typescript
 // my-extension.ts
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { defineTool } from "@earendil-works/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox"; // v0.69.0+ (was @sinclair/typebox; legacy alias kept)
 
-export default async function init(ctx: ExtensionContext) {
+export default async function init(pi: ExtensionAPI) {
   // Register a tool using defineTool() for full TypeScript type inference (v0.65.0+)
   const fetchTool = defineTool({
     name: "fetch_url",
@@ -64,15 +65,15 @@ export default async function init(ctx: ExtensionContext) {
       };
     }
   });
-  ctx.registerTool(fetchTool);
+  pi.registerTool(fetchTool);
 
   // Register a slash command
-  ctx.registerCommand({
+  pi.registerCommand({
     name: "/fetch",
     description: "Fetch a URL",
     completions: () => [],  // No completions
-    execute: async (args) => {
-      ctx.appendUserMessage(`Please fetch and summarize: ${args}`);
+    execute: async (args, ctx) => {
+      ctx.sendMessage(`Please fetch and summarize: ${args}`);
     }
   });
 }
@@ -80,7 +81,9 @@ export default async function init(ctx: ExtensionContext) {
 
 ---
 
-## ExtensionContext API
+## ExtensionAPI Methods
+
+The default-exported factory receives an `ExtensionAPI` (`pi`). Each event handler receives an `ExtensionContext` (`ctx`) scoped to the current turn/session.
 
 ### Tool Registration
 
@@ -89,10 +92,10 @@ export default async function init(ctx: ExtensionContext) {
 const myTool = defineTool({ name: "...", parameters: ..., execute: ... });
 
 // Register a tool (returns unregister function)
-const unregister = ctx.registerTool(tool: AgentTool): () => void;
+const unregister = pi.registerTool(tool: AgentTool): () => void;
 
 // Get all registered tools (includes parameters)
-ctx.getAllTools(): AgentTool[];
+pi.getAllTools(): AgentTool[];
 ```
 
 #### `prepareArguments` hook (v0.64.0)
@@ -100,7 +103,7 @@ ctx.getAllTools(): AgentTool[];
 Attach a `prepareArguments` hook to normalize or migrate raw model arguments before schema validation:
 
 ```typescript
-ctx.registerTool({
+pi.registerTool({
   name: "my_tool",
   parameters: ...,
   prepareArguments: (rawArgs) => {
@@ -117,18 +120,18 @@ ctx.registerTool({
 ### Command Registration
 
 ```typescript
-ctx.registerCommand({
-  name: string,               // "/my-command"
+pi.registerCommand({
+  name: string,               // "my-command" (slash added automatically)
   description: string,
   completions: (partial: string) => string[],
-  execute: (args: string) => Promise<void> | void
+  execute: (args: string, ctx: ExtensionContext) => Promise<void> | void
 });
 ```
 
 ### Event Hooks
 
 ```typescript
-ctx.on(event: string, handler: Function): void;
+pi.on(event: string, handler: (event, ctx) => unknown): void;
 ```
 
 | Event | Description |
@@ -158,15 +161,15 @@ pi.on("session_start", async (event, ctx) => {
 
 ### Cancellation Signal (v0.63.2)
 
+The per-handler `ctx.signal` is an `AbortSignal` tied to the active agent turn. Forward it to nested `fetch()` or model API calls for proper cancellation:
+
 ```typescript
-// ctx.signal is an AbortSignal tied to the active agent turn.
-// Forward it to nested fetch() calls or model API calls for proper cancellation.
-ctx.on("session_start", async (event, ctx) => {
+pi.on("session_start", async (event, ctx) => {
   const response = await fetch("https://api.example.com/data", { signal: ctx.signal });
 });
 ```
 
-### Session Management
+### Session Management (from `ctx` in handlers)
 
 ```typescript
 // Switch to another session
@@ -180,7 +183,7 @@ await ctx.compact(): Promise<void>;
 ctx.getContextUsage(): { used: number; total: number };
 ```
 
-### Message Queue
+### Message Queue (from `ctx`)
 
 ```typescript
 // Queue a steering message (interrupts current work)
@@ -191,53 +194,45 @@ ctx.followUp(message: string | AgentMessage): void;
 
 // Programmatically paste into editor
 ctx.pasteToEditor(text: string): void;
+
+// Send a user message immediately
+ctx.sendMessage(text: string): void;
 ```
 
-### UI Methods
+### UI Methods (from `ctx`)
 
 ```typescript
 // Set a custom label for the collapsed thinking block (v0.64.0)
 ctx.ui.setHiddenThinkingLabel("Reasoning...");
-```
 
-### UI: Custom Overlays
-
-```typescript
-// Show a capturing overlay (blocks input to underlying TUI)
+// Capturing overlay (blocks input to underlying TUI)
 ctx.ui.showOverlay({
   component: myComponent,
-  position: "center",           // "center" | "top" | "bottom" | percent
+  position: "center",
   size: { width: "50%", height: "auto" },
   onClose: () => {},
-  capturing: true               // Capture all input
+  capturing: true
 });
 
-// Non-capturing overlay (informational, doesn't block input)
-ctx.ui.showOverlay({
-  component: statusComponent,
-  position: "bottom",
-  capturing: false
-});
+// Notification (info | warn | error)
+ctx.ui.notify("Done!", "info");
 ```
 
-### Provider Registration
+### Provider Registration (on `pi`, at load time or runtime)
 
 ```typescript
-// Register a custom LLM provider
-ctx.registerProvider({
+pi.registerProvider({
   id: "my-provider",
   name: "My Provider",
   streamSimple: (model, context, options) => customStream(model, context, options)
 });
 
-// Remove a provider
-ctx.unregisterProvider("my-provider");
+pi.unregisterProvider("my-provider");
 ```
 
-### Session Labeling
+### Session Labeling (from `ctx`)
 
 ```typescript
-// Set a display label for the current session
 ctx.setLabel("Code Review: auth.ts");
 ```
 
@@ -250,14 +245,11 @@ ctx.setLabel("Code Review: auth.ts");
 Inspect or replace the LLM payload before it's sent:
 
 ```typescript
-ctx.on("before_provider_request", async (payload, model) => {
-  // Log the payload
-  console.log("Sending to", model.id, JSON.stringify(payload).length, "bytes");
-
-  // Return undefined to keep original, or return modified payload
+pi.on("before_provider_request", async (event, ctx) => {
+  // Inspect or replace the LLM payload
   return {
-    ...payload,
-    temperature: 0.2  // Override temperature
+    ...event.payload,
+    temperature: 0.2
   };
 });
 ```
@@ -267,9 +259,9 @@ ctx.on("before_provider_request", async (payload, model) => {
 Intercept raw terminal input:
 
 ```typescript
-ctx.on("terminal_input", (data: Buffer) => {
-  // Return true to consume the input (prevent normal handling)
-  if (data.toString() === "\x1b[A") {  // Up arrow
+pi.on("terminal_input", (event, ctx) => {
+  // Return true to consume the input
+  if (event.data.toString() === "\x1b[A") {  // Up arrow
     handleCustomUpArrow();
     return true;
   }
@@ -282,7 +274,7 @@ ctx.on("terminal_input", (data: Buffer) => {
 Supply additional resources:
 
 ```typescript
-ctx.on("resources_discover", () => ({
+pi.on("resources_discover", () => ({
   skills: [
     {
       name: "my-skill",
@@ -294,7 +286,7 @@ ctx.on("resources_discover", () => ({
     { name: "/standup", content: "Generate a standup report..." }
   ],
   themes: [
-    { name: "my-theme", colors: { ... } }
+    { name: "my-theme", colors: { /* ... */ } }
   ]
 }));
 ```
@@ -350,7 +342,7 @@ The monorepo includes 50+ example extensions in `packages/coding-agent/examples/
 Intercept and modify bash commands before they execute:
 
 ```typescript
-ctx.setBashSpawnHook(async (command: string) => {
+pi.setBashSpawnHook(async (command: string) => {
   // Must return the command to run (can be modified)
   // Log, transform, or replace the command
   if (command.includes("sudo")) {
@@ -367,7 +359,7 @@ ctx.setBashSpawnHook(async (command: string) => {
 Control how tool output is displayed:
 
 ```typescript
-ctx.registerTool({
+pi.registerTool({
   name: "my_tool",
   // ...
   // Show output expanded by default

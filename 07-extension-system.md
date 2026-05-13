@@ -36,7 +36,7 @@ In development (Node.js), jiti uses **aliases** to resolve workspace packages to
 
 | Package | Available via virtualModules |
 |---------|------------------------------|
-| `@sinclair/typebox` | Schema definitions for tool parameters |
+| `typebox` (1.x) | Schema definitions for tool parameters; `@sinclair/typebox` is aliased to it for legacy extensions (since v0.69.0) |
 | `@earendil-works/pi-agent-core` | Core agent types (`AgentMessage`, etc.) |
 | `@earendil-works/pi-tui` | TUI components (`Component`, `EditorComponent`, `KeyId`) |
 | `@earendil-works/pi-ai` | AI provider types (`Model`, `Api`, `Type`) |

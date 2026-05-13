@@ -1,6 +1,6 @@
 # LLM Providers
 
-Pi includes 29 released LLM provider IDs in v0.74.0, with generated model metadata restricted to models that support tool calling. Current `main` also contains unreleased Together AI provider work; this page keeps released providers separate from unreleased notes.
+Pi includes 31 released LLM provider IDs in v0.74.0 (per `packages/ai/src/types.ts:19-50` `KnownProvider` union), with generated model metadata restricted to models that support tool calling. Current `main` also contains unreleased Together AI provider work; this page keeps released providers separate from unreleased notes.
 
 ---
 
@@ -24,6 +24,7 @@ Pi includes 29 released LLM provider IDs in v0.74.0, with generated model metada
 | `mistral` | `MISTRAL_API_KEY` | Native Mistral SDK |
 | `minimax` | `MINIMAX_API_KEY` | MiniMax — supported model IDs: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed` (v0.63.0: legacy `minimax`/`minimax-cn` direct IDs removed) |
 | `huggingface` | `HF_TOKEN` | OpenAI-compatible Inference Router |
+| `fireworks` | `FIREWORKS_API_KEY` | Anthropic-compatible Messages API (added v0.68.1) — see detailed section below |
 | `opencode` | `OPENCODE_API_KEY` | OpenCode |
 | `opencode-go` | `OPENCODE_API_KEY` | OpenCode Go |
 | `kimi-coding` | `KIMI_API_KEY` | Moonshot AI (Anthropic-compatible) |
@@ -109,10 +110,10 @@ Current `main` after `v0.74.0` adds Together AI with `TOGETHER_API_KEY` and defa
 
 ```bash
 # Exact model ID
-pi --model claude-opus-4-6
+pi --model claude-opus-4-7
 
 # Provider-qualified
-pi --model anthropic/claude-opus-4-6
+pi --model anthropic/claude-opus-4-7
 
 # Fuzzy match
 pi --model opus
@@ -126,7 +127,7 @@ pi --model sonnet:high
 pi --model anthropic/opus:medium
 
 # Mid-session
-/model anthropic/claude-sonnet-4-6
+/model anthropic/claude-sonnet-4-7
 ```
 
 ---
@@ -161,7 +162,7 @@ Access 100+ models through a single API key:
 
 ```bash
 export OPENROUTER_API_KEY=sk-or-...
-pi --model openrouter/anthropic/claude-opus-4-6
+pi --model openrouter/anthropic/claude-opus-4-7
 pi --model openrouter:auto     # Let OpenRouter auto-select
 ```
 

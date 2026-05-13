@@ -12,7 +12,12 @@ Pi stores conversations as JSONL files in a tree structure, enabling branching, 
     └── <timestamp>_<uuid>.jsonl  # Append-only tree session, one JSON object per line
 ```
 
-Override with: `PI_CODING_AGENT_DIR`. (The `session_directory` extension event was removed in v0.65.0.)
+Override with:
+- `PI_CODING_AGENT_DIR=/path/to/dir` — relocate the entire agent dir (auth, settings, sessions, etc.).
+- `PI_CODING_AGENT_SESSION_DIR=/path/to/sessions` — relocate sessions only (v0.71.0).
+- `--session-dir <dir>` — per-invocation session directory.
+
+(The `session_directory` extension event was removed in v0.65.0.)
 
 ---
 
@@ -89,17 +94,9 @@ pi --fork <id>              # Fork specific session into a new session
 pi --no-session             # Ephemeral session, not saved
 ```
 
-### Resume Keybinding Action
+### Customizing Resume Keys
 
-Configure `Ctrl+R` behavior in settings:
-
-```json
-{
-  "keybindings": {
-    "resume": "open-picker"    // "open-picker" | "new-session"
-  }
-}
-```
+`Ctrl+R` (open picker), `Ctrl+N` (named filter), and other session keys are remappable via `~/.pi/agent/keybindings.json` under the namespaced action IDs (`app.session.resume`, `app.session.tree`, `app.session.new`, etc.). See [configuration.md](configuration.md) and `packages/coding-agent/docs/keybindings.md` for the full action list.
 
 ---
 
@@ -118,15 +115,23 @@ When the conversation history approaches the model's context window limit, pi au
 
 **Resilience:** Auto-compaction handles API errors (e.g., 529 overload) by retrying with exponential backoff (v0.56.3+).
 
-Configure:
+Configure (defaults shown):
+
 ```json
 {
   "compaction": {
-    "thresholdPercent": 80,
-    "keepRecentMessages": 10
+    "enabled": true,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
   }
 }
 ```
+
+- `reserveTokens` — tokens reserved for the LLM response (compaction triggers when input + reserve approaches the context window).
+- `keepRecentTokens` — recent tokens that are *not* summarized (kept verbatim).
+- Set `enabled: false` to disable auto-compaction entirely (use `/compact` manually).
+
+See `packages/coding-agent/docs/compaction.md` for the full reference.
 
 ---
 
@@ -191,7 +196,7 @@ Each line is a JSON object. Message types:
 
 ```jsonl
 {"role":"user","content":"Fix the authentication bug","timestamp":1234567890}
-{"role":"assistant","content":[{"type":"text","text":"I'll look at the auth code..."}],"api":"anthropic-messages","provider":"anthropic","model":"claude-opus-4-6","usage":{"input":1234,"output":567,...},"stopReason":"toolUse","timestamp":1234567891}
+{"role":"assistant","content":[{"type":"text","text":"I'll look at the auth code..."}],"api":"anthropic-messages","provider":"anthropic","model":"claude-opus-4-7","usage":{"input":1234,"output":567,...},"stopReason":"toolUse","timestamp":1234567891}
 {"role":"toolResult","toolCallId":"tool_abc","toolName":"read_file","content":[{"type":"text","text":"...file contents..."}],"isError":false,"timestamp":1234567892}
 ```
 

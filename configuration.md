@@ -1,6 +1,8 @@
 # Configuration
 
-Pi uses a layered configuration system. Project settings override global settings. Environment variables are read at startup.
+Pi uses a layered configuration system. Project-local settings (`.pi/`) override global settings (`~/.pi/agent/`). Environment variables are read at startup.
+
+> Authoritative reference: [`packages/coding-agent/docs/settings.md`](https://github.com/earendil-works/pi-mono/blob/v0.74.0/packages/coding-agent/docs/settings.md), [`packages/coding-agent/docs/keybindings.md`](https://github.com/earendil-works/pi-mono/blob/v0.74.0/packages/coding-agent/docs/keybindings.md), [`packages/coding-agent/docs/models.md`](https://github.com/earendil-works/pi-mono/blob/v0.74.0/packages/coding-agent/docs/models.md).
 
 ---
 
@@ -9,151 +11,209 @@ Pi uses a layered configuration system. Project settings override global setting
 | Path | Scope | Purpose |
 |------|-------|---------|
 | `~/.pi/agent/settings.json` | Global | Default settings for all projects |
-| `.pi/settings.json` | Project | Project-specific overrides |
-| `~/.pi/agent/auth.json` | Global | API keys and OAuth tokens |
-| `~/.pi/agent/models.json` | Global | Custom model definitions and per-provider API keys |
+| `.pi/settings.json` | Project | Project-specific overrides (merged shallowly) |
+| `~/.pi/agent/auth.json` | Global | API keys and OAuth tokens (0600 perms) |
+| `~/.pi/agent/models.json` | Global | Custom providers and model definitions (JSONC since v0.73.1) |
+| `~/.pi/agent/keybindings.json` | Global | Keybinding overrides |
+| `.pi/keybindings.json` | Project | Project keybinding overrides |
+| `~/.pi/agent/SYSTEM.md` / `APPEND_SYSTEM.md` | Global | Replace / extend system prompt |
+| `.pi/SYSTEM.md` / `APPEND_SYSTEM.md` | Project | Replace / extend system prompt for this project |
 
-Edit via TUI: `/settings`
+Edit settings via TUI: `/settings`. Reload after edits: `/reload`.
 
-Override the agent directory: `PI_CODING_AGENT_DIR=/path/to/dir pi`
+Override the agent directory: `PI_CODING_AGENT_DIR=/path/to/dir pi`.
+
+The directory name is read from the `piConfig.configDir` field of `package.json` (default: `.pi`).
 
 ---
 
 ## settings.json Reference
 
-All keys are optional. Unknown keys are ignored.
+All keys are optional. Unknown keys are ignored. The complete authoritative list lives in `packages/coding-agent/docs/settings.md`; common keys are summarized below.
 
-### Model
+### Model and Thinking
 
 ```json
 {
-  "model": "anthropic/claude-opus-4-6",
-  "thinkingLevel": "medium"
+  "model": "anthropic/claude-opus-4-7",
+  "thinkingLevel": "medium",
+  "thinkingBudgets": {
+    "minimal": 1024,
+    "low": 4096,
+    "medium": 16384,
+    "high": 32768,
+    "xhigh": 65536
+  }
 }
 ```
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `model` | string | Default model (provider/id, fuzzy, or glob) |
-| `thinkingLevel` | string | Default thinking: `off`, `minimal`, `low`, `medium`, `high`, `xhigh` |
+| `model` | string | Default model (provider/id, fuzzy, glob, or `name:thinking`) |
+| `thinkingLevel` | string | `off`, `minimal`, `low`, `medium`, `high`, `xhigh` |
+| `thinkingBudgets` | object | Per-level token budget overrides |
+
+### Tools
+
+```json
+{
+  "tools": ["read", "bash", "edit", "write"],
+  "enabledTools": ["read", "grep", "find", "ls"],
+  "shellPath": "/bin/bash",
+  "shellCommandPrefix": ["bash", "-lc"]
+}
+```
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `tools` | string[] | Allowlist of tool names (built-in, extension, custom) |
+| `shellPath` | string | Shell binary used by `bash` tool |
+| `shellCommandPrefix` | string[] | argv prefix wrapping every `bash` command |
 
 ### Display
 
 ```json
 {
   "theme": "default",
-  "markdown": {
-    "codeBlockIndent": 2
-  },
+  "markdown": { "codeBlockIndent": 2 },
   "editorPaddingX": 1,
   "showImages": true,
-  "quietStartup": false
+  "quietStartup": false,
+  "autocompleteMaxVisible": 8,
+  "showHardwareCursor": false
 }
 ```
-
-| Key | Type | Description |
-|-----|------|-------------|
-| `theme` | string | Active theme name |
-| `markdown.codeBlockIndent` | number | Code block indentation |
-| `editorPaddingX` | number | Left padding in editor |
-| `showImages` | boolean | Show inline images (Kitty/iTerm2) |
-| `quietStartup` | boolean | Suppress startup messages |
 
 ### Session
 
 ```json
 {
+  "sessionDir": "~/.pi/agent/sessions",
   "treeFilterMode": "all",
   "branchSummary": {
-    "skipPrompt": false
-  }
+    "skipPrompt": false,
+    "reserveTokens": 16384
+  },
+  "doubleEscapeAction": "interrupt"
 }
 ```
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `treeFilterMode` | string | Session tree filter: `all`, `bookmarked`, `labeled` |
-| `branchSummary.skipPrompt` | boolean | Skip confirmation when creating branch summaries |
+| `sessionDir` | string | Session directory (`~` is expanded) |
+| `treeFilterMode` | string | `all`, `bookmarked`, or `labeled` |
+| `branchSummary.skipPrompt` | boolean | Skip confirm when summarizing an abandoned branch |
+| `doubleEscapeAction` | string | What double-Escape does in the editor |
 
-> **Note (v0.65.0):** The `session_directory` configuration key was removed. Use `PI_CODING_AGENT_DIR` to override the agent directory instead.
+> **Note (v0.65.0):** the `session_directory` setting was removed. Use `sessionDir`, `--session-dir`, `PI_CODING_AGENT_SESSION_DIR`, or `PI_CODING_AGENT_DIR`.
 
-### Terminal
+### Compaction (Authoritative Defaults)
 
 ```json
 {
-  "terminal": {
-    "clearOnShrink": false
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
   }
 }
 ```
 
-### `terminal.imageWidthCells` (v0.68.1)
-Configure the terminal column width for inline tool output images. Default: 60.
+| Key | Default | Description |
+|-----|---------|-------------|
+| `compaction.enabled` | `true` | Auto-compact when context fills |
+| `compaction.reserveTokens` | `16384` | Tokens reserved for LLM response |
+| `compaction.keepRecentTokens` | `20000` | Recent tokens kept verbatim (not summarized) |
 
-### Keys
-
-```json
-{
-  "shellCommandPrefix": "bash -c"
-}
-```
-
-### Networking
+### Networking and Retry
 
 ```json
 {
   "transport": "auto",
+  "cacheRetention": "short",
   "retry": {
-    "maxDelayMs": 30000
-  },
-  "cacheRetention": "short"
+    "maxDelayMs": 30000,
+    "maxAttempts": 8,
+    "provider": {
+      "anthropic": { "maxAttempts": 12 }
+    }
+  }
 }
 ```
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `transport` | string | `sse`, `websocket`, or `auto` |
-| `retry.maxDelayMs` | number | Max retry delay in milliseconds |
+| `transport` | string | `sse`, `websocket`, `websocket-cached`, or `auto` |
 | `cacheRetention` | string | `none`, `short`, or `long` |
+| `retry.*` | object | Global retry policy |
+| `retry.provider.<id>.*` | object | Per-provider retry overrides |
 
-### Packages
+### Terminal and Images
 
 ```json
 {
-  "npmCommand": "npm"
+  "terminal": {
+    "clearOnShrink": false,
+    "imageWidthCells": 60
+  },
+  "images": {
+    "maxWidth": 1600
+  }
 }
 ```
 
-Override the npm command used for package operations. Useful when using nvm, volta, or other Node version managers.
+### Packages and Resources
+
+```json
+{
+  "npmCommand": ["npm"],
+  "packages": ["@scope/some-pi-extension", { "name": "foo", "enabled": false }],
+  "extensions": ["~/code/my-ext/index.ts"],
+  "skills": ["~/notes/skills"],
+  "prompts": ["~/notes/prompts"],
+  "themes": ["~/.pi/agent/themes"],
+  "enableSkillCommands": true,
+  "enabledModels": ["anthropic/claude-*", "openai/gpt-5*"],
+  "enableInstallTelemetry": false,
+  "warnings": { "anthropicExtraUsage": true }
+}
+```
+
+`npmCommand` is an **argv array** (since v0.66+); a bare string is also accepted for backwards compatibility. Use this to bind pi to a particular Node version manager:
+
+```json
+{ "npmCommand": ["volta", "run", "npm"] }
+```
 
 ---
 
 ## auth.json
 
-Stores API keys and OAuth tokens. Managed automatically via `/login` and the `models.json` `apiKey` field.
+Stores API keys and OAuth tokens. Managed automatically via `/login` and the `models.json` `apiKey` field. Created with `0600` permissions.
 
 ```json
 {
-  "anthropic": {
-    "type": "api_key",
-    "key": "sk-ant-..."
-  },
-  "github-copilot": {
-    "type": "oauth",
-    "accessToken": "...",
-    "refreshToken": "...",
-    "expiresAt": 1234567890
-  }
+  "anthropic": { "type": "api_key", "key": "sk-ant-..." },
+  "openai":    { "type": "oauth", "access_token": "...", "refresh_token": "...", "expires_at": 1234567890 },
+  "github-copilot": { "type": "oauth", "access_token": "...", "refresh_token": "...", "expires_at": 1234567890 }
 }
 ```
 
-**Security:** File locking prevents concurrent access corruption.
+Auth file values take priority over environment variables. A `key` value supports three resolution forms:
+
+| Form | Example |
+|------|---------|
+| Shell command | `"!op read 'op://vault/anthropic/credential'"` (cached for process lifetime) |
+| Env var name | `"MY_ANTHROPIC_KEY"` |
+| Literal | `"sk-ant-..."` |
+
+File locking via `proper-lockfile` prevents concurrent corruption.
 
 ---
 
 ## models.json
 
-Customize providers and define custom model entries. Since v0.73.1, `models.json` accepts JSONC-style comments and trailing commas before parsing.
+Customize providers and define custom model entries. Since v0.73.1, `models.json` accepts JSONC-style comments and trailing commas.
 
 ```json
 {
@@ -173,25 +233,42 @@ Customize providers and define custom model entries. Since v0.73.1, `models.json
   },
   "models": {
     "my-model": {
-      "id": "my-model",
-      "name": "My Local Model",
+      "id": "llama3",
+      "name": "Llama 3 (Local)",
       "provider": "my-local",
       "api": "openai-completions",
       "contextWindow": 128000,
       "maxTokens": 4096,
       "input": ["text"],
-      "cost": {
-        "input": 0,
-        "output": 0,
-        "cacheRead": 0,
-        "cacheWrite": 0
-      }
+      "reasoning": false,
+      "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
     }
   }
 }
 ```
 
-API key values prefixed with `!` are resolved as shell commands at runtime.
+`apiKey` and entries in `headers` support the same three resolution forms as `auth.json`. The 4 user-selectable `api:` values for a custom provider are `openai-completions`, `openai-responses`, `anthropic-messages`, and `google-generative-ai`.
+
+See `packages/coding-agent/docs/models.md` for every field including `modelOverrides`, `compat.*`, `thinkingLevelMap`, and `authHeader`.
+
+---
+
+## keybindings.json
+
+Keybinding actions live in a single namespace (`tui.editor.*`, `app.*`, etc.). Override per action with one key or a list:
+
+```json
+{
+  "app.interrupt": "ctrl+c",
+  "app.session.tree": ["ctrl+t", "F2"],
+  "tui.editor.cursorUp": "up",
+  "app.thinking.cycle": "alt+t",
+  "app.model.cycleForward": "alt+m",
+  "app.message.followUp": "alt+enter"
+}
+```
+
+Reload with `/reload`. See `packages/coding-agent/docs/keybindings.md` for the full action catalog.
 
 ---
 
@@ -202,124 +279,87 @@ These files shape the agent's behavior and are loaded automatically:
 | File | Location | Purpose |
 |------|----------|---------|
 | `AGENTS.md` | `cwd` and ancestor directories up to git root | Project instructions for the agent |
-| `SYSTEM.md` | `~/.pi/agent/` or `.pi/` | Replace the default system prompt entirely |
+| `CLAUDE.md` | Same discovery rule | Alias for `AGENTS.md` (concatenated alongside) |
+| `SYSTEM.md` | `~/.pi/agent/` or `.pi/` | **Replace** the default system prompt entirely |
 | `APPEND_SYSTEM.md` | `~/.pi/agent/` or `.pi/` | Append to the default system prompt |
 
-Multiple `AGENTS.md` files are concatenated from outermost to innermost directory.
+Multiple `AGENTS.md` / `CLAUDE.md` files are concatenated from outermost to innermost directory. See [context.md](context.md).
 
 ---
 
-## Skills
+## Resource Directories
 
-Skills are reusable Markdown prompt files. Place them in any of:
+Pi auto-discovers user-defined resources at both project and user-global level:
 
 ```
-.agents/skills/     # Project-level (auto-discovered)
-.pi/skills/         # Project-level (pi-specific)
-~/.pi/skills/       # User-global
-~/.agents/skills/   # User-global (shared with other agents)
+.pi/extensions/    ~/.pi/agent/extensions/    Project / user TypeScript extensions
+.pi/skills/        ~/.pi/agent/skills/        Markdown skills
+.agents/skills/                               Cross-tool skills (also discovered)
+.pi/prompts/       ~/.pi/agent/prompts/       Slash-command prompt templates
+.pi/themes/        ~/.pi/agent/themes/        Theme files (JSON or YAML)
 ```
 
-Each skill has a frontmatter header:
-
-```markdown
----
-name: code-review
-description: Thorough code review checklist and procedure
----
-
-# Code Review Procedure
-...
-```
-
-Skills appear in the context files system and are available via `/` autocomplete.
+Project resources take precedence over user-global. See [extensions.md](extensions.md) and [context.md](context.md).
 
 ---
 
-## Prompt Templates
+## Environment Variables
 
-Prompt templates are Markdown files that can be invoked via slash commands:
-
-```
-~/.pi/agent/prompts/    # User-global
-.pi/prompts/            # Project-level
-```
-
-A template named `standup.md` is invoked with `/standup`.
-
----
-
-## Themes
-
-Themes are JSON or YAML files defining terminal color schemes:
-
-```
-~/.pi/agent/themes/    # User-global
-.pi/themes/            # Project-level
-```
-
-Switch theme: `/settings` → Theme → select from list
-
----
-
-## Environment Variables (Full List)
-
-### Provider API Keys
+### Provider API Keys (excerpt — full list in [providers.md](providers.md))
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...
-ANTHROPIC_OAUTH_TOKEN=...          # Preferred for OAuth
+ANTHROPIC_OAUTH_TOKEN=...          # Preferred over API key for Anthropic
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=...
-GOOGLE_CLOUD_API_KEY=...           # For google-vertex
-GROQ_API_KEY=...
-CEREBRAS_API_KEY=...
-XAI_API_KEY=...
-OPENROUTER_API_KEY=...
+GOOGLE_CLOUD_API_KEY=...           # google-vertex
+GROQ_API_KEY=...                   CEREBRAS_API_KEY=...
+XAI_API_KEY=...                    OPENROUTER_API_KEY=...
 AI_GATEWAY_API_KEY=...             # Vercel AI Gateway
-ZAI_API_KEY=...
-MISTRAL_API_KEY=...
-MINIMAX_API_KEY=...
-HF_TOKEN=...                       # HuggingFace
-OPENCODE_API_KEY=...
-KIMI_API_KEY=...
-COPILOT_GITHUB_TOKEN=...           # GitHub Copilot (also GH_TOKEN or GITHUB_TOKEN)
-AWS_ACCESS_KEY_ID=...              # AWS Bedrock
-AWS_SECRET_ACCESS_KEY=...
-AWS_PROFILE=...                    # AWS profile
+ZAI_API_KEY=...                    MISTRAL_API_KEY=...
+MINIMAX_API_KEY=...                MINIMAX_CN_API_KEY=...
+MOONSHOT_API_KEY=...               # moonshotai and moonshotai-cn
+HF_TOKEN=...                       FIREWORKS_API_KEY=...
+OPENCODE_API_KEY=...               # opencode and opencode-go
+KIMI_API_KEY=...                   DEEPSEEK_API_KEY=...
+COPILOT_GITHUB_TOKEN=...           # also GH_TOKEN or GITHUB_TOKEN
+CLOUDFLARE_API_KEY=...             # workers-ai and ai-gateway
+CLOUDFLARE_ACCOUNT_ID=...          CLOUDFLARE_GATEWAY_ID=...
+XIAOMI_API_KEY=...                 # mimo
+XIAOMI_TOKEN_PLAN_CN_API_KEY=...
+XIAOMI_TOKEN_PLAN_AMS_API_KEY=...
+XIAOMI_TOKEN_PLAN_SGP_API_KEY=...
+AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=...   # amazon-bedrock
+AWS_PROFILE=... AWS_BEARER_TOKEN_BEDROCK=...      # alternatives
+AZURE_OPENAI_API_KEY=... AZURE_OPENAI_BASE_URL=...
 ```
 
 ### Pi Runtime
 
 ```bash
-PI_CODING_AGENT_DIR=~/.pi/agent    # Override agent directory
-PI_CODING_AGENT_SESSION_DIR=/path/to/sessions  # Override session storage directory (v0.71.0)
-PI_OFFLINE=1                        # Disable startup network ops
-PI_CACHE_RETENTION=long            # Extended prompt caching
-PI_PACKAGE_DIR=/path               # For Nix/Guix environments
-PI_SHARE_VIEWER_URL=https://...    # Custom share viewer
-PI_TUI_WRITE_LOG=/tmp/pi.log       # Capture raw ANSI stream
-PI_DEBUG_REDRAW=1                  # Log redraw triggers
-PI_HARDWARE_CURSOR=1               # Enable hardware cursor
-PI_CLEAR_ON_SHRINK=1               # Clear on content shrink
-PI_OAUTH_CALLBACK_HOST=0.0.0.0    # Custom OAuth callback bind address (v0.68.0)
+PI_CODING_AGENT_DIR=~/.pi/agent            # Override the whole agent dir
+PI_CODING_AGENT_SESSION_DIR=/path/to/sessions   # v0.71.0
+PI_OFFLINE=1                                # Disable startup network ops
+PI_CACHE_RETENTION=long                     # Anthropic extended prompt cache
+PI_PACKAGE_DIR=/path                        # Writable package dir for Nix/Guix
+PI_SKIP_VERSION_CHECK=1                     # Suppress update check
+PI_TELEMETRY=0                              # Disable optional telemetry
+PI_SHARE_VIEWER_URL=https://...             # Custom share viewer
+PI_TUI_WRITE_LOG=/tmp/pi.log                # Capture raw ANSI stream
+PI_DEBUG_REDRAW=1                           # Log redraw triggers
+PI_HARDWARE_CURSOR=1                        # Hardware cursor
+PI_CLEAR_ON_SHRINK=1                        # Clear screen on shrink
+PI_OAUTH_CALLBACK_HOST=0.0.0.0              # Bind OAuth callback (v0.68.0)
+VISUAL=$EDITOR                              # Used for `$EDITOR` slash command
 ```
 
-### `PI_CODING_AGENT_SESSION_DIR` (v0.71.0)
-Set the session storage directory. Equivalent to the `--session-dir` CLI flag.
+### AWS Bedrock Overrides
 
 ```bash
-PI_CODING_AGENT_SESSION_DIR=/path/to/sessions pi
-```
-
-### `PI_OAUTH_CALLBACK_HOST` (v0.68.0)
-Set to bind OAuth callback servers to a custom interface instead of hardcoded `127.0.0.1`.
-
-### AWS Bedrock
-
-```bash
-AWS_BEDROCK_SKIP_AUTH=1            # Skip auth (for proxy setups)
+AWS_BEDROCK_SKIP_AUTH=1            # Skip auth (proxy in front)
 AWS_BEDROCK_FORCE_HTTP1=1          # Force HTTP/1.1
+AWS_BEDROCK_FORCE_CACHE=1          # Force prompt caching for app inference profiles
+AWS_ENDPOINT_URL_BEDROCK_RUNTIME=https://my-proxy/bedrock
 ```
 
 ### Network
@@ -328,3 +368,13 @@ AWS_BEDROCK_FORCE_HTTP1=1          # Force HTTP/1.1
 HTTP_PROXY=http://proxy:8080
 HTTPS_PROXY=http://proxy:8080
 ```
+
+---
+
+## Source-of-Truth Pointers
+
+- `packages/coding-agent/src/core/settings-manager.ts` — settings shape and defaults
+- `packages/coding-agent/docs/settings.md` — full settings reference (first-party)
+- `packages/coding-agent/docs/models.md` — `models.json` schema
+- `packages/coding-agent/docs/keybindings.md` — keybinding registry
+- `packages/ai/src/env-api-keys.ts` — `envMap` (provider → env var)
